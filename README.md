@@ -1,5 +1,5 @@
-# CMU INI Practicum Team 5
-Augmenting Tele-conferencing with Machine Vision
+# Augmenting Tele-conferencing with Machine Vision
+CMU INI Practicum Team 5
 
 # Faculaty
 Piotr, Carlee
