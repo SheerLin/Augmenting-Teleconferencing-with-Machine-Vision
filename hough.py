@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import os
 import math
-from detection_extraction.test7Tuning.reshape import four_point_transform
+from reshape import four_point_transform
 
 def emptyDirectory(folder):
     for the_file in os.listdir(folder):
@@ -257,7 +257,7 @@ def generateRectangle(inputDir, filename):
     # cv2.imwrite(croppedPath, cropped)
 
 
-inputDir = "../data"
+inputDir = "./web-document-scanner/data"
 outputDir = "output"
 emptyDirectory(outputDir)
 for filename in os.listdir(inputDir):
