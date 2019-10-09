@@ -48,7 +48,7 @@ def auto_canny(image, sigma = 0.33):
 
     # TODO - Tune paras to defined the boundry for canny algorithm
     lower = int(0.45 * v)
-    upper = int(max(0, (0.9 - sigma) * v))
+    upper = int(max(0, (1.1 - sigma) * v))
 
     # # apertureSize = 3
     # L2gradient = True
