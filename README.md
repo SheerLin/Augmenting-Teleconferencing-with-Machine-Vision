@@ -11,17 +11,17 @@ Arpit Gupta, Nan Lin, MengMeng Zhang
 # Build
 ## Virtual Driver
 https://github.com/webcamoid/akvcam
-`
+```
 git clone https://github.com/webcamoid/akvcam.git
 cd akvcam/src
 make
 sudo make install
 sudo depmod -a
-`
+```
 
 ### configuration
 sudo vim /etc/akvcam/config.ini
-`
+```
 [Cameras]
 cameras/size = 2
 
@@ -56,29 +56,29 @@ formats/3/fps = 60
 [Connections]
 connections/size = 1
 connections/1/connection = 1:2
-`
+```
 
 ### insert mod
-`
+```
 cd akvcam/src
 sudo modprobe videodev
 sudo insmod akvcam.ko
-`
+```
 
 ### remove mod
-`
+```
 cd akvcam/src
 sudo rmmod akvcam.ko
-`
+```
 
 ## Python Lib
-`
+```
 sudo pip install v4l2
 sudo pip install numpy
 sudo pip install python-opencv
-`
+```
 
 ## Run
-`
+```
 python main.py
-`
+```
