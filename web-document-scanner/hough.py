@@ -239,7 +239,8 @@ def generateRectangle(src):
     points = np.array(points)
     cropped = four_point_transform(src, points)
 
-    return src
+    # return src
+    return cropped
 
 # inputPath = "data/20181017_100333.jpg"
 #

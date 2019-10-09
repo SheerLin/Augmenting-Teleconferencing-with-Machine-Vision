@@ -43,8 +43,12 @@ def auto_canny(image, sigma = 0.33):
     # lower = int(max(0, (1.0 - sigma) * v))
     # upper = int(min(255, (1.0 + sigma) *v))
 
-    lower = int(0.5 * v)
-    upper = int(max(0, (1.0 - sigma) * v))
+    # lower = int(0.5 * v)
+    # upper = int(max(0, (1.0 - sigma) * v))
+
+    # TODO - Tune paras to defined the boundry for canny algorithm
+    lower = int(0.45 * v)
+    upper = int(max(0, (1.1 - sigma) * v))
 
     # # apertureSize = 3
     # L2gradient = True
@@ -68,6 +72,11 @@ def laplacian(image):
 
 def hough(L, edges):
     # https://docs.opencv.org/2.4/doc/tutorials/imgproc/imgtrans/hough_lines/hough_lines.html
+    # threshold = 100  # Accumulator threshold parameter. Only those lines are returned that get enough votes ( >threshold ).
+    # minLineLength = 0.1*L # The minimum number of points that can form a line. Lines with less than this number of points are disregarded.
+    # maxLineGap = 0.02*L # The maximum gap between two points to be considered in the same line.
+
+    # TODO - Tune paras to find hough lines
     threshold = 100  # Accumulator threshold parameter. Only those lines are returned that get enough votes ( >threshold ).
     minLineLength = 0.1*L # The minimum number of points that can form a line. Lines with less than this number of points are disregarded.
     maxLineGap = 0.02*L # The maximum gap between two points to be considered in the same line.
@@ -96,7 +105,9 @@ def print_line(src, line, color):
         cv2.line(src, (col1, row1), (col2, row2), color, 3, cv2.LINE_AA)
 
 def findLongestLine(src, lines, rowMin, colMin, rowMax, colMax, vertical):
-    threshold = 10
+    # TODO - Tune paras to set the threshold for allowed degree
+    #threshold = 10
+    threshold = 15
 
     res = None
     resL = 0
@@ -154,10 +165,16 @@ def isValidPoint(src, point):
 def findRectDivideConquer(src, lines):
     height = src.shape[0]
     width = src.shape[1]
-    top = findLongestLine(src, lines, 0, 0, height/4, width, vertical=False)
-    bottom = findLongestLine(src, lines, 3*height/4, 0, height, width, vertical=False)
-    left = findLongestLine(src, lines, 0, 0, height, width/4, vertical=True)
-    right = findLongestLine(src, lines, 0, 3*width/4, height, width, vertical=True)
+    # top = findLongestLine(src, lines, 0, 0, height/4, width, vertical=False)
+    # bottom = findLongestLine(src, lines, 3*height/4, 0, height, width, vertical=False)
+    # left = findLongestLine(src, lines, 0, 0, height, width/4, vertical=True)
+    # right = findLongestLine(src, lines, 0, 3*width/4, height, width, vertical=True)
+
+    # TODO - Tune paras to find area
+    top = findLongestLine(src, lines, 0, 0, height / 3, width, vertical=False)
+    bottom = findLongestLine(src, lines, 2 * height / 3, 0, height, width, vertical=False)
+    left = findLongestLine(src, lines, 0, 0, height, width / 3, vertical=True)
+    right = findLongestLine(src, lines, 0, 2 * width / 3, height, width, vertical=True)
 
     if top is None:
         top = np.array((0, 0, width, 0)).reshape(1,4)
