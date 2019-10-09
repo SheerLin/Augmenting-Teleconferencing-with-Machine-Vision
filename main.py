@@ -1,7 +1,3 @@
-# sudo modprobe videodev
-# sudo insmod akvcam.ko
-# sudo rmmod akvcam.ko
-
 import fcntl
 import sys
 import os
