@@ -16,7 +16,7 @@ class Engine:
     def process(self, im):
         # print(self.frame)
 
-        im = self.extractor(im, self.frame)
+        im, edg = self.extractor(im, self.frame)
         
         self.frame += 1
-        return im
+        return im, edg

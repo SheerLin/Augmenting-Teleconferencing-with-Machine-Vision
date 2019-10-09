@@ -43,10 +43,6 @@ def auto_canny(image, sigma = 0.33):
     # lower = int(max(0, (1.0 - sigma) * v))
     # upper = int(min(255, (1.0 + sigma) *v))
 
-    # lower = int(0.5 * v)
-    # upper = int(max(0, (1.0 - sigma) * v))
-
-    # TODO - Tune paras to defined the boundry for canny algorithm
     lower = int(0.45 * v)
     upper = int(max(0, (1.1 - sigma) * v))
 
@@ -72,11 +68,6 @@ def laplacian(image):
 
 def hough(L, edges):
     # https://docs.opencv.org/2.4/doc/tutorials/imgproc/imgtrans/hough_lines/hough_lines.html
-    # threshold = 100  # Accumulator threshold parameter. Only those lines are returned that get enough votes ( >threshold ).
-    # minLineLength = 0.1*L # The minimum number of points that can form a line. Lines with less than this number of points are disregarded.
-    # maxLineGap = 0.02*L # The maximum gap between two points to be considered in the same line.
-
-    # TODO - Tune paras to find hough lines
     threshold = 100  # Accumulator threshold parameter. Only those lines are returned that get enough votes ( >threshold ).
     minLineLength = 0.1*L # The minimum number of points that can form a line. Lines with less than this number of points are disregarded.
     maxLineGap = 0.02*L # The maximum gap between two points to be considered in the same line.
@@ -105,8 +96,6 @@ def print_line(src, line, color):
         cv2.line(src, (col1, row1), (col2, row2), color, 3, cv2.LINE_AA)
 
 def findLongestLine(src, lines, rowMin, colMin, rowMax, colMax, vertical):
-    # TODO - Tune paras to set the threshold for allowed degree
-    #threshold = 10
     threshold = 15
 
     res = None
@@ -120,8 +109,8 @@ def findLongestLine(src, lines, rowMin, colMin, rowMax, colMax, vertical):
             # cv2.line(src, (col1, row1), (col2, row2), (211, 211, 211), 3, cv2.LINE_AA)
             print_line(src, line, (211,211,211))
             if col1 != col2:
-                angle = math.atan((row1 - row2) / (col1 - col2))
-                angle = abs(angle * 180 / math.pi)
+                angle = math.atan((row1 - row2) / (col1 - col2));
+                angle = abs(angle * 180 / math.pi);
             if vertical:
                 if abs(angle - 90) < threshold:
                     L = math.sqrt((row1 - row2)**2 + (col1 - col2)**2)
@@ -135,7 +124,6 @@ def findLongestLine(src, lines, rowMin, colMin, rowMax, colMax, vertical):
                         res = line
                         resL = L
     return res
-
 
 def find_intersection(line1, line2):
     # extract points
@@ -165,16 +153,10 @@ def isValidPoint(src, point):
 def findRectDivideConquer(src, lines):
     height = src.shape[0]
     width = src.shape[1]
-    # top = findLongestLine(src, lines, 0, 0, height/4, width, vertical=False)
-    # bottom = findLongestLine(src, lines, 3*height/4, 0, height, width, vertical=False)
-    # left = findLongestLine(src, lines, 0, 0, height, width/4, vertical=True)
-    # right = findLongestLine(src, lines, 0, 3*width/4, height, width, vertical=True)
-
-    # TODO - Tune paras to find area
-    top = findLongestLine(src, lines, 0, 0, height / 3, width, vertical=False)
-    bottom = findLongestLine(src, lines, 2 * height / 3, 0, height, width, vertical=False)
-    left = findLongestLine(src, lines, 0, 0, height, width / 3, vertical=True)
-    right = findLongestLine(src, lines, 0, 2 * width / 3, height, width, vertical=True)
+    top = findLongestLine(src, lines, 0, 0, height/3, width, vertical=False)
+    bottom = findLongestLine(src, lines, 2*height/3, 0, height, width, vertical=False)
+    left = findLongestLine(src, lines, 0, 0, height, width/3, vertical=True)
+    right = findLongestLine(src, lines, 0, 2*width/3, height, width, vertical=True)
 
     if top is None:
         top = np.array((0, 0, width, 0)).reshape(1,4)
@@ -219,19 +201,20 @@ class Extractor:
         return self.extract_whiteboard(src, frame)
 
     def extract_whiteboard(self, src, frame):
-        # Skip if not sampling frame
-        if frame % self.params['freq'] != 0:
-            if self.points is not None:
-                src_cropped = four_point_transform(src, self.points, self.params['width'], self.params['height'])
-            else:
-                src_cropped = src
-            return src_cropped
+        # # Skip if not sampling frame
+        # if frame % self.params['freq'] != 0:
+        #     if self.points is not None:
+        #         src_cropped = four_point_transform(src, self.points, self.params['width'], self.params['height'])
+        #     else:
+        #         src_cropped = src
+        #     return src_cropped
 
         # Convert the color from BGR to Gray
         src_gray = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
 
         src_blur = src_gray
         # src_blur = cv2.GaussianBlur(src_gray, (3, 3), 0)
+        # src_blur = cv2.addWeighted(, contrast, img, 0, brightness)
 
         # Detect edges
         src_edges = auto_canny(src_blur)
@@ -244,7 +227,7 @@ class Extractor:
                 src_cropped = four_point_transform(src, self.points, self.params['width'], self.params['height'])
             else:
                 src_cropped = src
-            return src_cropped
+            return src_cropped, src_edges
 
         # Find points for cropping
         # rect = findRectMinArea(src, lines)
@@ -253,26 +236,26 @@ class Extractor:
         # Update cropping points
         if self.points is not None:
             if np.allclose(self.points, points, atol=self.params['closeness']):
-                print("close to _pts")
+                print("close to pts")
                 self.new_points = None
                 self.new_seen = 0
             else:
                 if self.new_points is not None:
                     if np.allclose(self.new_points, points, atol=self.params['closeness']):
                         if self.new_seen == 5:
-                            print("switch to _newpts")
+                            print("### switch to newpts ###")
                             self.points = self.new_points
                             self.new_points = None
                             self.new_seen = 0
                         else:
-                            print("close to _newpts")
+                            print("close to newpts")
                             self.new_seen += 1
                     else:
-                        print("update _newpts")
+                        print("update newpts")
                         self.new_points = points
                         self.new_seen = 1
                 else:
-                    print("init _newpts")
+                    print("init newpts")
                     self.new_points = points
                     self.new_seen = 1
         else:
@@ -283,4 +266,5 @@ class Extractor:
         # Crop the image
         src_cropped = four_point_transform(src, self.points, self.params['width'], self.params['height'])
 
-        return src_cropped
+        src_edges = cv2.cvtColor(src_edges, cv2.COLOR_GRAY2BGR)
+        return src_cropped, src_edges
