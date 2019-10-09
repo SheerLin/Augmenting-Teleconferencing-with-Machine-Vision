@@ -48,7 +48,7 @@ def auto_canny(image, sigma = 0.33):
 
     # TODO - Tune paras to defined the boundry for canny algorithm
     lower = int(0.45 * v)
-    upper = int(max(0, (1.1 - sigma) * v))
+    upper = int(max(0, (0.9 - sigma) * v))
 
     # # apertureSize = 3
     # L2gradient = True
@@ -120,8 +120,8 @@ def findLongestLine(src, lines, rowMin, colMin, rowMax, colMax, vertical):
             # cv2.line(src, (col1, row1), (col2, row2), (211, 211, 211), 3, cv2.LINE_AA)
             print_line(src, line, (211,211,211))
             if col1 != col2:
-                angle = math.atan((row1 - row2) / (col1 - col2));
-                angle = abs(angle * 180 / math.pi);
+                angle = math.atan((row1 - row2) / (col1 - col2))
+                angle = abs(angle * 180 / math.pi)
             if vertical:
                 if abs(angle - 90) < threshold:
                     L = math.sqrt((row1 - row2)**2 + (col1 - col2)**2)
