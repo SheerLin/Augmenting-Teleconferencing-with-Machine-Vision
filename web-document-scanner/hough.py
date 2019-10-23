@@ -3,6 +3,7 @@ import numpy as np
 import os
 import math
 from reshape import four_point_transform
+from undistort.undistort import undistort_square
 
 def emptyDirectory(folder):
     for the_file in os.listdir(folder):
@@ -239,8 +240,10 @@ def generateRectangle(src):
     points = np.array(points)
     cropped = four_point_transform(src, points)
 
+    undistorted = undistort_square(cropped)
+
     # return src
-    return cropped
+    return undistorted
 
 # inputPath = "data/20181017_100333.jpg"
 #
