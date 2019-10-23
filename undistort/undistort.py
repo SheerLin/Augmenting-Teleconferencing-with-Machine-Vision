@@ -2,6 +2,8 @@ import numpy as np
 import cv2
 import glob
 import os
+import time
+import json
 
 
 def undistort_square(src):
@@ -10,7 +12,12 @@ def undistort_square(src):
 
 original_chessboard_path = 'data/chessboard/original/*.jpg'
 to_calibrate_path = 'data/distorted/'
+saved_profile_path = 'profiles/profile1.txt'
 show_image = False
+save_image = False
+both_way = False
+crop = False
+start_time = time.time()
 
 # termination criteria
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
@@ -24,6 +31,7 @@ objpoints = []  # 3d point in real world space
 imgpoints = []  # 2d points in image plane.
 
 images = glob.glob(original_chessboard_path)
+valid_pics = 0
 
 for fname in images:
     img = cv2.imread(fname)
@@ -33,7 +41,7 @@ for fname in images:
     ret, corners = cv2.findChessboardCorners(gray, (7, 6), None)
 
     # If found, add object points, image points (after refining them)
-    if ret == True:
+    if ret:
         objpoints.append(objp)
 
         corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
@@ -44,11 +52,30 @@ for fname in images:
         if show_image:
             cv2.imshow('img', img)
             cv2.waitKey(100)
+
+        valid_pics += 1
     else:
         print("No return value")
 
+elapsed_time = time.time() - start_time
 cv2.destroyAllWindows()
+print("Collect 3d point from ", valid_pics, " pictures:", elapsed_time)
+print("imgpoints", type(imgpoints))
+print("objpoints", type(objpoints))
 
+# obj = {
+#     "imgpoints": imgpoints,
+#     "objpoints": objpoints
+# }
+#
+# encoded = json.dumps(obj)
+#
+# with open(saved_profile_path,'w+') as filename:
+#     filename.writelines(encoded)
+#
+# exit()
+
+start_time = time.time()
 ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
 
 # img = cv2.imread('data/chessboard/left12.jpg')
@@ -60,7 +87,7 @@ index = 1
 print("start")
 
 for fname in distorted_images:
-    print(fname)
+    # print(fname)
     img = cv2.imread(fname)
 
     h, w = img.shape[:2]
@@ -70,7 +97,9 @@ for fname in distorted_images:
     if show_image:
         cv2.imshow('img', img)
         cv2.waitKey(100)
-    cv2.imwrite(to_calibrate_path + 'calibrated/' + str(index) + '_0original.jpg', img)
+
+    if save_image:
+        cv2.imwrite(to_calibrate_path + 'calibrated/' + str(index) + '_0original.jpg', img)
 
     # method1: undistort using undistort()
     dst = cv2.undistort(img, mtx, dist, None, newcameramtx)
@@ -79,45 +108,57 @@ for fname in distorted_images:
     if show_image:
         cv2.imshow('img', dst)
         cv2.waitKey(100)
-    cv2.imwrite(to_calibrate_path + 'calibrated/' + str(index) + '_1undistort.jpg', dst)
 
-    # crop the image
-    x, y, w, h = roi
-    dst = dst[y:y + h, x:x + w]
+    if save_image:
+        cv2.imwrite(to_calibrate_path + 'calibrated/' + str(index) + '_1undistort.jpg', dst)
 
-    # Show undistorted and cropped
-    if show_image:
-        cv2.imshow('img', dst)
-        cv2.waitKey(300)
-    cv2.imwrite(to_calibrate_path + 'calibrated/' + str(index) + '_1undistort_cropped.jpg', dst)
+    if crop:
+        # crop the image
+        x, y, w, h = roi
+        dst = dst[y:y + h, x:x + w]
 
-    # method2: undistort using remap
-    mapx, mapy = cv2.initUndistortRectifyMap(mtx, dist, None, newcameramtx, (w, h), 5)
-    dst = cv2.remap(img, mapx, mapy, cv2.INTER_LINEAR)
+        # Show undistorted and cropped
+        if show_image:
+            cv2.imshow('img', dst)
+            cv2.waitKey(300)
 
-    # Show original
-    if show_image:
-        cv2.imshow('img', img)
-        cv2.waitKey(100)
+        if save_image:
+            cv2.imwrite(to_calibrate_path + 'calibrated/' + str(index) + '_1undistort_cropped.jpg', dst)
 
-        # Show undistorted
-        cv2.imshow('img', dst)
-        cv2.waitKey(100)
+    if both_way:
+        # method2: undistort using remap
+        mapx, mapy = cv2.initUndistortRectifyMap(mtx, dist, None, newcameramtx, (w, h), 5)
+        dst = cv2.remap(img, mapx, mapy, cv2.INTER_LINEAR)
 
-    cv2.imwrite(to_calibrate_path + 'calibrated/' + str(index) + '_2remap.jpg', dst)
+        # Show original
+        if show_image:
+            cv2.imshow('img', img)
+            cv2.waitKey(100)
 
-    # crop the image
-    x, y, w, h = roi
-    dst = dst[y:y + h, x:x + w]
+            # Show undistorted
+            cv2.imshow('img', dst)
+            cv2.waitKey(100)
 
-    # Show undistorted and cropped
-    if show_image:
-        cv2.imshow('img', dst)
-        cv2.waitKey(600)
-    cv2.imwrite(to_calibrate_path + 'calibrated/' + str(index) + '_2remap_cropped.jpg', dst)
+        if save_image:
+            cv2.imwrite(to_calibrate_path + 'calibrated/' + str(index) + '_2remap.jpg', dst)
+
+        if crop:
+            # crop the image
+            x, y, w, h = roi
+            dst = dst[y:y + h, x:x + w]
+
+            # Show undistorted and cropped
+            if show_image:
+                cv2.imshow('img', dst)
+                cv2.waitKey(600)
+
+            if save_image:
+                cv2.imwrite(to_calibrate_path + 'calibrated/' + str(index) + '_2remap_cropped.jpg', dst)
 
     index += 1
 
+elapsed_time = time.time() - start_time
+print("Undistort", len(distorted_images), " pictures:", elapsed_time)
 
 # mean_error = 0
 # for i in xrange(len(objpoints)):
