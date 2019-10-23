@@ -86,3 +86,4 @@ python main.py
 
 ## Docs
 https://circuitdigest.com/tutorial/image-manipulation-in-python-opencv-part2
+https://docs.opencv.org/3.4/dd/d49/tutorial_py_contour_features.html
