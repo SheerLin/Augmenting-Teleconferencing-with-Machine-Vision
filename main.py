@@ -10,7 +10,7 @@ import engine
 
 # video0 is the integrated web cam
 cam_device_number = 0
-# cam_device_number = 6
+cam_device_number = 6
 
 # video4 is the virtual camera capture device
 cap_device_number = 4
@@ -64,11 +64,10 @@ def process_video(cam_device, cap_device):
             ret, im = cam_device.read()
             if not ret:
                 continue
-            out, edg = eng.process(im)
+            out = eng.process(im)
             cap_device.write(out)
-            cv2.imshow("Orig", im)
-            cv2.imshow("Video", out)
-            cv2.imshow("Edges", edg)
+            # cv2.imshow("Orig", im)
+            # cv2.imshow("Video", out)
         except Exception as e:
             print(e)
             break

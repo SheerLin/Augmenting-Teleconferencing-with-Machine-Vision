@@ -82,3 +82,7 @@ sudo pip install python-opencv
 ```
 python main.py
 ```
+
+
+## Docs
+https://circuitdigest.com/tutorial/image-manipulation-in-python-opencv-part2

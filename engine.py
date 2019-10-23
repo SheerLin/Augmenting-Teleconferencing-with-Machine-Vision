@@ -1,4 +1,4 @@
-import hough
+import extractor
 
 class Engine:
 
@@ -6,7 +6,7 @@ class Engine:
         self.width = width
         self.height = height
         self.frame = 0
-        self.extractor = hough.Extractor({
+        self.extractor = extractor.Extractor({
             'width': self.width,
             'height': self.height,
             'freq': 10,
@@ -15,8 +15,29 @@ class Engine:
 
     def process(self, im):
         # print(self.frame)
+        # if self.frame == 1:
+        #     return im
 
-        im, edg = self.extractor(im, self.frame)
+        im = self.extractor(im, self.frame)
         
         self.frame += 1
-        return im, edg
+        return im
+
+
+####################
+# begin denoising
+####################
+
+
+# b,g,r = cv2.split(src)           # get b,g,r
+# rgb_img = cv2.merge([r,g,b])     # switch it to rgb
+
+# Denoising
+# dst = cv2.fastNlMeansDenoisingColored(src,None,10,10,7,21)
+# dst = cv2.medianBlur(src, 3)
+
+# b,g,r = cv2.split(dst)           # get b,g,r
+# rgb_dst = cv2.merge([r,g,b])     # switch it to rgb
+# cv2.imshow("a", dst)
+
+# fastNlMeansDenoisingColoredMulti()

@@ -22,6 +22,7 @@ def order_points(pts):
 	rect[3] = pts[np.argmax(diff)]
 
 	# return the ordered coordinates
+	# print("rect", rect)
 	return rect
 
 def fill_frame(img, width, height):
@@ -50,7 +51,7 @@ def four_point_transform(image, pts, width, height):
 	# obtain a consistent order of the points and unpack them
 	# individually
 	rect = order_points(pts)
-	(tl, tr, br, bl) = rect
+	(tl, tr, br, bl) = pts
 
 	# compute the width of the new image, which will be the
 	# maximum distance between bottom-right and bottom-left
