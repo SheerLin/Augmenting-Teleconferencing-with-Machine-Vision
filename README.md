@@ -73,9 +73,24 @@ sudo rmmod akvcam.ko
 
 ## Python Lib
 ```
-sudo pip install v4l2
 sudo pip install numpy
 sudo pip install python-opencv
+sudo pip install v4l2
+```
+
+Patch v4l2 for Python 3:
+https://bugs.launchpad.net/python-v4l2/+bug/1664158
+```
+vim sudo vim /usr/local/lib/python3.7/site-packages/v4l2.py
+Rather than
+) = range(1, 9) + [0x80] 
+the `v4l2_buf_type` line ought to be
+) = list(range(1, 9)) + [0x80]
+
+Rather than
+) = range(0, 4) + [2]
+the `v4l2_priority` line ought to be
+) = list(range(0, 4)) + [2]
 ```
 
 ## Run

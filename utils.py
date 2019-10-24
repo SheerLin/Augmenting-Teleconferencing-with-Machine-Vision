@@ -137,15 +137,15 @@ def fill_frame(img, width, height):
     
     # calculate height difference and top-bottom border
     hdiff = height - h
-    top = hdiff / 2
-    bottom = hdiff / 2
+    top = hdiff // 2
+    bottom = hdiff // 2
     if hdiff % 2 != 0:
         bottom += 1
     
     # calculate width difference and left-right border
     wdiff = width - w
-    left = wdiff / 2
-    right = wdiff / 2
+    left = wdiff // 2
+    right = wdiff // 2
     if wdiff % 2 != 0:
         right += 1
     
@@ -195,7 +195,7 @@ def four_point_transform(image, pts, width, height):
     im = fill_frame(warped, width, height)
 
     # return the warped image
-    return im
+    return image
 
 def rescale_by_height(image, target_height, method=cv2.INTER_LANCZOS4):
     """Rescale `image` to `target_height` (preserving aspect ratio)."""

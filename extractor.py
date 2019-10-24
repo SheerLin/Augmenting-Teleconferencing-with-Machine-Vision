@@ -7,7 +7,9 @@ class Extractor:
 
     def __init__(self, params):
         self.points = None
+        self.dims = None
         self.new_points = None
+        self.new_dims = None
         self.new_seen = 0
         self.params = params
         self.area = self.params['width'] * self.params['height']
@@ -200,23 +202,25 @@ class Extractor:
                 cv2.rectangle(src_ex, (x,y), (x+w,y+h), (255,0,0), 2)
 
                 # points = np.array([[x, y], [x+w, y], [x, y+h], [x+w, y+h]])
-                points = c[:,0,:]
-                src_cropped1 = four_point_transform(orig, points, self.params['width'], self.params['height'])
-                src_cropped2 = orig[y:y+h, x:x+w]
+                # points = c[:,0,:]
+                # src_cropped1 = four_point_transform(orig, points, self.params['width'], self.params['height'])
+                # src_cropped2 = orig[y:y+h, x:x+w]
                 # cv2.imshow('Cropped1', src_cropped1)
                 # cv2.imshow('Cropped2', src_cropped2)
                 break
         cv2.rectangle(src_ex, (center_x,center_y), (center_x+center_box_w,center_y+center_box_h), (0,0,255), 2)
         # cv2.imshow('Contours', src_ex)
         
-        show1 = [orig, src_ex]
-        show2 = [src_gray, src_filter, src_thresh]
+        # show1 = [orig, src_ex]
+        # show2 = [src_gray, src_filter, src_thresh]
         # cv2.imshow('proc', np.hstack(show2))
         # cv2.imshow('A', np.hstack(show1))
         
         return src_ex, (x,y,w,h)
 
-    def pipelineC(self, orig, (x,y,w,h), width, height):
+    def pipelineC(self, orig, dims, width, height):
+        (x,y,w,h) = dims
+
         # Crop
         src = orig.copy()
         src_crop = src[y:y+h, x:x+w]
@@ -250,7 +254,8 @@ class Extractor:
         theta = np.pi / 180  # The resolution of the parameter \theta in radians. We use 1 degree (CV_PI/180)
         lines = cv2.HoughLinesP(src_edges, rho, theta, threshold, None, minLineLength, maxLineGap)
         if lines is None:
-            return orig.copy(), None
+            points = np.array([[x, y], [x+w, y], [x, y+h], [x+w, y+h]])
+            return orig.copy(), points
 
         # Find points for cropping
         src_hough = src_crop.copy()
@@ -260,20 +265,15 @@ class Extractor:
         src_ex = orig.copy()
         src_ex[y:y+h, x:x+w] = src_hough[:,:]
         
-        # src = src_hough
-        # src = rescale_by_height(src, height)
-        # src = rescale_by_width(src, width)
-
         return src_ex, points
 
     def update_points(self, points, dims, closeness):
         if self.points is not None:
-            saved_x,saved_y,_,_ = self.dims
             saved_points = self.points + self.dims[:2]
             cur_points = points + dims[:2]
             
             if np.allclose(saved_points, cur_points, atol=closeness):
-                print('close to pts')
+                print('Close Points')
                 self.new_points = None
                 self.new_dims = None
                 self.new_seen = 0
@@ -282,7 +282,7 @@ class Extractor:
                     new_points = self.new_points + self.new_dims[:2]
                     if np.allclose(new_points, cur_points, atol=closeness):
                         if self.new_seen == 3:
-                            print('### switch to cur pts ###')
+                            print('### Switch Points ###')
                             self.points = points
                             self.dims = dims
                             self.new_points = None
@@ -306,10 +306,8 @@ class Extractor:
             self.points = points
             self.dims = dims
 
-        # print('points', points)
-        # print('dims', dims)
-    
-    def crop(self, orig, (x,y,w,h), points, width, height):
+    def crop(self, orig, dims, points, width, height):
+        (x,y,w,h) = dims
         src = orig.copy()
         src = src[y:y+h, x:x+w]
         src = four_point_transform(src, points, width, height)
