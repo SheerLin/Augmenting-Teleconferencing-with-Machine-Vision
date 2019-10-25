@@ -1,5 +1,6 @@
 #include <opencv2/opencv.hpp>
 #include "opencv2/superres.hpp"
+#include <chrono> 
 
 using namespace cv;
 using namespace std;
@@ -19,15 +20,14 @@ int main(int argc, char** argv)
     string inputVideoName = cmd.get<string>("video");
     if ( inputVideoName.empty())
     {
-        inputVideoName = "./data/lenica_rhinoceros_1965_512kb.mp4";
+        inputVideoName = "./data/wb_mengmeng.mov";
     }
+    string outputVideoName = "superres.mp4";
 
     Ptr<cv::superres::FrameSource> f;
     f = cv::superres::createFrameSource_Video(inputVideoName);
     Ptr<cv::superres::SuperResolution >sr;
-
-    VideoCapture vid;
-    vid.open(0);
+    VideoWriter writer;
 
     sr = cv::superres::createSuperResolution_BTVL1();
     Ptr<DenseOpticalFlowExt> of = cv::superres::createOptFlow_Farneback();
@@ -39,24 +39,32 @@ int main(int argc, char** argv)
     sr->setIterations(2);
     Mat frame;
     char c;
-//    Mat frameZoom;
-//    Mat mZoom;
-//    Mat v;
-    f->nextFrame(frame);
-    sr->setInput(f);
-    do{
-        sr->nextFrame(frame);
-        imshow("Video SuperRes", frame);
-//        if (vid.grab())
-//        {
-//            vid >> v;
-//            resize(v, mZoom, Size(0, 0), scale, scale);
-//            imshow("Video Scale", mZoom);
-//
-//        }
-//            imshow("Video SuperRes", frame);
-        c = waitKey(20);
 
-    } while (c != 27);
+    auto start = std::chrono::high_resolution_clock::now();
+
+    sr->setInput(f);
+    int count = 0;
+    while(true){
+        sr->nextFrame(frame);
+        if (count > 10)
+            break;
+        if (!outputVideoName.empty())
+        {
+            std::cout<<"1";
+            if (!writer.isOpened()) {
+                std::cout<<"2";
+
+                // https://www.fourcc.org/mp4v/   => mpg-4
+                writer.open(outputVideoName, VideoWriter::fourcc('m', 'p', '4', 'v'), 30.0, frame.size());
+                std::cout<<"3";
+            }
+            writer << frame; 
+            auto finish = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> elapsed = finish - start;
+            std::cout << "Elapsed time: " << elapsed.count()  << "seconds, frame =" << count << "\n";
+            count++;
+        }
+    }
+    writer.release();
     return 0;
 }
