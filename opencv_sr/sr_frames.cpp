@@ -10,19 +10,6 @@ using namespace cv::superres;
 int main(int argc, char** argv)
 {
 
-// seconds
-/* Elapsed time: 14.6527 count =1
-Elapsed time: 12.3023seconds, frame =0
-Elapsed time: 17.1125seconds, frame =1
-Elapsed time: 22.0923seconds, frame =2
-Elapsed time: 27.7308seconds, frame =3
-Elapsed time: 33.3677seconds, frame =4
-Elapsed time: 39.2368seconds, frame =5
-Elapsed time: 45.6676seconds, frame =6
-Elapsed time: 52.0725seconds, frame =7
-Elapsed time: 60.3158seconds, frame =8
-Elapsed time: 68.7447seconds, frame =9*/
-
     CommandLineParser cmd(argc, argv,
         "{ v video      |           | Input video (mandatory)}"
     );
@@ -30,7 +17,7 @@ Elapsed time: 68.7447seconds, frame =9*/
     string inputVideoName = cmd.get<string>("video");
     if ( inputVideoName.empty())
     {
-        inputVideoName = "./data/wb_memgmeng.mov";
+        inputVideoName = "./data/wb_mengmeng.mov";
     }
 
     Ptr<cv::superres::FrameSource> f1, f2;
