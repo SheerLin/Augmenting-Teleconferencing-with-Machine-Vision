@@ -4,6 +4,8 @@ import glob
 import os
 import time
 import json
+import numpy as np
+import codecs
 
 
 def undistort_square(src):
@@ -12,7 +14,10 @@ def undistort_square(src):
 
 original_chessboard_path = 'data/chessboard/original/*.jpg'
 to_calibrate_path = 'data/distorted/'
-saved_profile_path = 'profiles/profile1.txt'
+imgpoints_profile_path = 'profiles/profile1_imgpoints.txt'
+imgpoints_profile_path2 = 'profiles/profile1_imgpoints2.txt'
+objpoints_profile_path = 'profiles/profile1_objpoints.txt'
+
 show_image = False
 save_image = False
 both_way = False
@@ -60,20 +65,58 @@ for fname in images:
 elapsed_time = time.time() - start_time
 cv2.destroyAllWindows()
 print("Collect 3d point from ", valid_pics, " pictures:", elapsed_time)
-print("imgpoints", type(imgpoints))
+print("imgpoints", type(imgpoints), "len=", len(imgpoints))
 print("objpoints", type(objpoints))
 
+index = 0
+dictionary = dict()
+for imgpoint in imgpoints:
+    # print("imgpoint", type(imgpoint), imgpoint)
+    # json.dumps(imgpoint)
+    imgpoint_list = imgpoint.tolist()
+    dictionary[index] = imgpoint_list
+
+    index += 1
+
+dictionary_dump = json.dumps(dictionary)
+with open(imgpoints_profile_path, 'w+') as filename:
+    filename.writelines(dictionary_dump)
+
+json.dump(dictionary_dump, codecs.open(imgpoints_profile_path2, 'w', encoding='utf-8'), separators=(',', ':'),
+          sort_keys=True, indent=4)
+
+obj_text = codecs.open(imgpoints_profile_path, 'r', encoding='utf-8').read()
+b_new = json.loads(obj_text)
+print("b_new", len(b_new))
+
+index = 0
+for b in b_new.values():
+    # print(b)
+    b_np = np.array(b)
+    imgpoint_np = imgpoints[index]
+    index += 1
+    print(np.equal(b_np, imgpoint_np))
+
+    # print("type", type(b))
+
+# imgpoints_list = imgpoints.tolist()
+# objpoints_list = objpoints.tolist()
+
 # obj = {
-#     "imgpoints": imgpoints,
-#     "objpoints": objpoints
+#     "imgpoints": imgpoints_list,
+#     "objpoints": objpoints_list
 # }
 #
 # encoded = json.dumps(obj)
 #
-# with open(saved_profile_path,'w+') as filename:
+# with open(saved_profile_path, 'w+') as filename:
 #     filename.writelines(encoded)
-#
-# exit()
+
+# json.dump(imgpoints, codecs.open(imgpoints_profile_path, 'w', encoding='utf-8'), separators=(',', ':'), sort_keys=True, indent=4)
+# json.dump(objpoints, codecs.open(objpoints_profile_path, 'w', encoding='utf-8'), separators=(',', ':'), sort_keys=True, indent=4)
+### this saves the array in .json format
+
+exit()
 
 start_time = time.time()
 ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)

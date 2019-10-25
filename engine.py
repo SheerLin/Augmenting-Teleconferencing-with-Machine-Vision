@@ -1,4 +1,6 @@
 import extractor
+import undistortion
+
 
 class Engine:
 
@@ -12,15 +14,16 @@ class Engine:
             'freq': 10,
             'closeness': 20
         })
+        self.undistort_instance = undistortion.Undistortion(profile_path=None,
+                                                            chessboard_folder_path=undistortion.default_chessboard_path)
 
     def process(self, im):
         # print(self.frame)
-        
+        im = self.undistort_instance(im)
         im = self.extractor(im, self.frame)
-        
+
         self.frame += 1
         return im
-
 
 ####################
 # begin denoising
