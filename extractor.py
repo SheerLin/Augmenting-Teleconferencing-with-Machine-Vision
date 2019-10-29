@@ -119,14 +119,14 @@ class Extractor:
     def pipelineB(self, orig):
         (center_x, center_y, center_box_w, center_box_h) = self.dims_center
     
-        # TODO share/clahe
+        # TODO sharp/clahe
         # Apply sharpening filter
         src = orig.copy()
         kernel = np.array([[-1,-1,-1],
                            [-1, 9,-1],
                            [-1,-1,-1]])
         src_sharp = cv2.filter2D(src, -1, kernel)
-        cv2.imshow('Sharp', src_sharp)
+        # cv2.imshow('Sharp', src_sharp)
 
         # Apply CLAHE for histogram equilization
         src = orig.copy()
@@ -136,7 +136,7 @@ class Extractor:
         cl = clahe.apply(l)
         src_clab = cv2.merge((cl,a,b))
         src_clahe = cv2.cvtColor(src_clab, cv2.COLOR_LAB2BGR)
-        cv2.imshow('Clahe', src_clahe)
+        # cv2.imshow('Clahe', src_clahe)
         
         # TODO smooth filter
         # Apply smoothening preserving edge
@@ -157,7 +157,7 @@ class Extractor:
         upper = np.minimum(avg+delta*m, 255).astype('uint8')
         mask = cv2.inRange(src, lower, upper)
         src_white = cv2.bitwise_and(src, src, mask = mask)
-        cv2.imshow('White', src_white)
+        # cv2.imshow('White', src_white)
 
         # Convert the color from BGR to Gray
         src = src_white
@@ -176,13 +176,13 @@ class Extractor:
         # Apply smoothening preserving edge
         src = morph
         src_filter = cv2.edgePreservingFilter(src, flags=cv2.RECURS_FILTER, sigma_s=60, sigma_r=0.4)
-        cv2.imshow('Filter', src_filter)
+        # cv2.imshow('Filter', src_filter)
 
         # Apply mean adaptive theshold
         # Convert to edges
         src = src_filter
         src_thresh = cv2.adaptiveThreshold(src, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 3, 7)
-        cv2.imshow('Thresh', src_thresh)
+        # cv2.imshow('Thresh', src_thresh)
 
         # Erosion followed by Dilation (Opening Morph)
         # Connect breaks caused by noise
