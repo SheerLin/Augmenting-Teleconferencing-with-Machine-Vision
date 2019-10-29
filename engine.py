@@ -1,29 +1,44 @@
+import cv2
+import numpy as np
+
+import beautifier
 import extractor
 import undistortion
-
 
 class Engine:
 
     def __init__(self, width, height):
         self.width = width
         self.height = height
-        self.frame = 0
+        self.frame_num = 0
         self.extractor = extractor.Extractor({
             'width': self.width,
             'height': self.height,
             'freq': 10,
             'closeness': 20
         })
-        self.undistort_instance = undistortion.Undistortion(profile_path=None,
-                                                            chessboard_folder_path=undistortion.default_chessboard_path)
+        # self.undistort_instance = undistortion.Undistortion(profile_path=None,
+        #                                                     chessboard_folder_path=undistortion.default_chessboard_path)
+        self.beautifier = beautifier.Beautifier({
 
-    def process(self, im):
-        # print(self.frame)
-        im = self.undistort_instance(im)
-        im = self.extractor(im, self.frame)
+        })
 
-        self.frame += 1
-        return im
+    def process(self, orig):
+        src = orig.copy()
+        cv2.imshow('orig', src)
+
+        # src = self.undistort_instance(src)
+
+        src = self.extractor(src, self.frame_num)
+        cv2.imshow('extractor', src)
+
+        src = self.beautifier(src)
+        cv2.imshow('beautifier', src)
+
+        self.frame_num += 1
+        # show = np.hstack([orig, src])
+        # cv2.imshow('Video', show)
+        return src
 
 ####################
 # begin denoising

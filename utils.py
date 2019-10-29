@@ -195,7 +195,7 @@ def four_point_transform(image, pts, width, height):
     im = fill_frame(warped, width, height)
 
     # return the warped image
-    return image
+    return im
 
 def rescale_by_height(image, target_height, method=cv2.INTER_LANCZOS4):
     """Rescale `image` to `target_height` (preserving aspect ratio)."""

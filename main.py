@@ -11,7 +11,7 @@ import engine
 
 # video0 is the integrated web cam
 CAM_DEVICE_NUMBER = 0
-# CAM_DEVICE_NUMBER = 6
+CAM_DEVICE_NUMBER = 6
 
 # video4 is the virtual camera capture device
 CAP_DEVICE_NUMBER = 4
