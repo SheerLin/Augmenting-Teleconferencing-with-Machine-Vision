@@ -16,6 +16,7 @@ class Extractor:
         self.width = params['width']
         self.height = params['height']
         self.area = self.width * self.height
+        self.logfile = open("extractPoints.log", "w")
 
     def __call__(self, src, frame_num):
         return self.extract_whiteboard(src, frame_num)
@@ -308,6 +309,10 @@ class Extractor:
         src = orig.copy()
         src = src[y:y+h, x:x+w]
         src = four_point_transform(src, self.points, self.width, self.height)
+
+        for i in range(len(self.points)):
+            self.logfile.write(str(self.points[i][0]) + "," + str(self.points[i][1]) + ";")
+        self.logfile.write("\n")
         return src
 
     def extract_whiteboard(self, src, frame_num):
