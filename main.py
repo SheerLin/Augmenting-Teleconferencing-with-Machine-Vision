@@ -63,10 +63,13 @@ def process_video(cam_device, cap_device):
         try:
             ret, im = cam_device.read()
             if not ret:
-                continue
+                break
             out = eng.process(im)
-            cap_device.write(str(out.tostring()))
+            if cap_device is not None:
+                cap_device.write(str(out.tostring()))
+            # cv2.namedWindow('Orig', cv2.WINDOW_NORMAL)
             # cv2.imshow("Orig", im)
+
             # cv2.imshow("Video", out)
         except Exception as e:
             print(e)
