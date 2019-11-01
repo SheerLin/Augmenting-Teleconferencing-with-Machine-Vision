@@ -35,8 +35,8 @@ class Engine:
         # cv2.imshow('beautifier', src)
 
         self.frame_num += 1
-        show = np.hstack([orig, src])
-        cv2.imshow('Video', show)
+        # show = np.hstack([orig, src])
+        # cv2.imshow('Video', show)
         return src
 
 ####################
