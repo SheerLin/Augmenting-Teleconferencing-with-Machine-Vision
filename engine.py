@@ -25,19 +25,18 @@ class Engine:
 
     def process(self, orig):
         src = orig.copy()
-        cv2.imshow('orig', src)
-
+        
         # src = self.undistort_instance(src)
 
         src = self.extractor(src, self.frame_num)
-        cv2.imshow('extractor', src)
+        # cv2.imshow('extractor', src)
 
         src = self.beautifier(src)
-        cv2.imshow('beautifier', src)
+        # cv2.imshow('beautifier', src)
 
         self.frame_num += 1
-        # show = np.hstack([orig, src])
-        # cv2.imshow('Video', show)
+        show = np.hstack([orig, src])
+        cv2.imshow('Video', show)
         return src
 
 ####################

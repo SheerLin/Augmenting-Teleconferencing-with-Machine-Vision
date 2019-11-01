@@ -22,16 +22,28 @@ class Beautifier:
         src_clab = cv2.merge((cl,a,b))
         src_clahe = cv2.cvtColor(src_clab, cv2.COLOR_LAB2BGR)
         # cv2.imshow('Clahe', src_clahe)
-
-        # Convert the color from BGR to Gray
+        
+        # Apply sharpening filter
         src = src_clahe
-        src_gray = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
+        kernel = np.array([[-1,-1,-1],
+                           [-1, 9,-1],
+                           [-1,-1,-1]])
+        src_sharp = cv2.filter2D(src, -1, kernel)
+        # cv2.imshow('Sharp', src_sharp)
 
+
+        # TODO: Gray or Colored?
+        # Convert the color from BGR to Gray
+        # src = src_clahe
+        # src_gray = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
+
+        
+        # TODO: Threshold?
         # Apply mean adaptive theshold
-        src = src_gray
-        src_thresh = cv2.adaptiveThreshold(src, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                cv2.THRESH_BINARY, 11, 3)
+        # src = src_gray
+        # src_thresh = cv2.adaptiveThreshold(src, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        #         cv2.THRESH_BINARY, 11, 3)
         # cv2.imshow('Thresh', src_thresh)
         
-        src = src_thresh
+        src = src_sharp
         return src

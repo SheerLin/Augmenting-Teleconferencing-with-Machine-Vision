@@ -11,14 +11,13 @@ import engine
 
 # video0 is the integrated web cam
 CAM_DEVICE_NUMBER = 0
-# CAM_DEVICE_NUMBER = 6
+CAM_DEVICE_NUMBER = 6
 
 # video4 is the virtual camera capture device
 CAP_DEVICE_NUMBER = 4
 
 # frame size
-# WIDTH = 1920
-# HEIGHT = 1080
+# WIDTH, HEIGHT = (1920, 1080)
 WIDTH, HEIGHT = (640, 480)
 
 def get_cap_device(dev_number):
@@ -28,7 +27,7 @@ def get_cap_device(dev_number):
         print("Warning: device does not exist", dev_name)
         exit()
     try:
-        device = open(dev_name, 'w')
+        device = open(dev_name, 'wb')
     except Exception:
         print("Exception in opening device")
         exit()
@@ -65,9 +64,7 @@ def process_video(cam_device, cap_device):
             if not ret:
                 continue
             out = eng.process(im)
-            cap_device.write(str(out.tostring()))
-            # cv2.imshow("Orig", im)
-            # cv2.imshow("Video", out)
+            cap_device.write(out)
         except Exception as e:
             print(e)
             break
