@@ -40,3 +40,11 @@ Elapsed time: 123.899seconds, frame =7
 Elapsed time: 134.722seconds, frame =8
 Elapsed time: 145.519seconds, frame =9
 Elapsed time: 156.358seconds, frame =10
+
+practicum@piotrm-nano:~/git-clones/Augmenting-Teleconferencing-with-Machine-Vision/opencv_sr$ g++ sr_video.cpp -o sr_video `pkg-config --cflags --libs opencv`
+practicum@piotrm-nano:~/git-clones/Augmenting-Teleconferencing-with-Machine-Vision/opencv_sr$ ./sr_video
+OpenCV Error: The function/feature is not implemented (The called functionality is disabled for current build or platform) in createFrameSource_Video_CUDA, file /home/nvidia/build_opencv/opencv/modules/superres/src/frame_source.cpp, line 200
+terminate called after throwing an instance of 'cv::Exception'
+  what():  /home/nvidia/build_opencv/opencv/modules/superres/src/frame_source.cpp:200: error: (-213) The called functionality is disabled for current build or platform in function createFrameSource_Video_CUDA
+
+Aborted (core dumped)
