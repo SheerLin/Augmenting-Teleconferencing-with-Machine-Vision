@@ -27,3 +27,16 @@ Elapsed time: 45.6676seconds, frame =6
 Elapsed time: 52.0725seconds, frame =7
 Elapsed time: 60.3158seconds, frame =8
 Elapsed time: 68.7447seconds, frame =9*/
+
+# small pc
+Elapsed time: 47.8281seconds, frame =0
+Elapsed time: 58.7665seconds, frame =1
+Elapsed time: 69.6879seconds, frame =2
+Elapsed time: 80.4911seconds, frame =3
+Elapsed time: 91.3095seconds, frame =4
+Elapsed time: 102.171seconds, frame =5
+Elapsed time: 113.035seconds, frame =6
+Elapsed time: 123.899seconds, frame =7
+Elapsed time: 134.722seconds, frame =8
+Elapsed time: 145.519seconds, frame =9
+Elapsed time: 156.358seconds, frame =10

@@ -26,11 +26,14 @@ int main(int argc, char** argv)
 
     Ptr<cv::superres::FrameSource> f;
     f = cv::superres::createFrameSource_Video(inputVideoName);
+    // f = cv::superres::createFrameSource_Video_CUDA(inputVideoName);
     Ptr<cv::superres::SuperResolution >sr;
     VideoWriter writer;
 
     sr = cv::superres::createSuperResolution_BTVL1();
+    // sr = cv::superres::createSuperResolution_BTVL1_CUDA();
     Ptr<DenseOpticalFlowExt> of = cv::superres::createOptFlow_Farneback();
+    // Ptr<DenseOpticalFlowExt> of = cv::superres::createOptFlow_Farneback_CUDA();
 
     int scale = 2;
     sr->setOpticalFlow(of);
