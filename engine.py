@@ -23,8 +23,7 @@ class Engine:
             'freq': SAMPLE_FREQ,
             'closeness': 20
         })
-        # self.undistort_instance = undistortion.Undistortion(profile_path=None,
-        #                                                     chessboard_folder_path=undistortion.default_chessboard_path)
+        # self.undistort_instance = undistortion.Undistortion()
         self.beautifier = beautifier.Beautifier({
 
         })

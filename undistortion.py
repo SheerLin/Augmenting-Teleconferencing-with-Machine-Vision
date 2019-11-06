@@ -2,16 +2,17 @@ import cv2
 import glob
 import os
 import time
-import json
 import numpy as np
-import codecs
 
 profiles_folder = "undistort/profiles"
+npy_file_postfix = ".npy"
 
 default_chessboard_path = "undistort/data/chessboard/original/*"
+default_chessboard_path2 = "undistort/data/chessboard/original4/*"
 
-# TODO - set default_profile_path
-default_profile_path = "undistort/profiles/test1.txt"
+# Set default_img_points_path and default_obj_points_path
+default_img_points_path = profiles_folder + "/img1" + npy_file_postfix
+default_obj_points_path = profiles_folder + "/obj1" + npy_file_postfix
 
 # TODO - needed for selecting profile
 para_2_profile_file_path = ""
@@ -30,8 +31,9 @@ para_2_profile_file_path = ""
 
 
 class Undistortion:
-    def __init__(self, profile_path=None, chessboard_folder_path=None):
-        self.profile_path = profile_path
+    def __init__(self, chessboard_folder_path=None, img_points_path=None, obj_points_path=None):
+        self.img_points_path = img_points_path
+        self.obj_points_path = obj_points_path
         self.chessboard_folder_path = chessboard_folder_path
 
         # TO be initialized:
@@ -44,7 +46,9 @@ class Undistortion:
         self.show_image = False
         self.save_image = False
         self.both_way = False
-        self.crop = False
+        self.crop = True
+        # self.imshow_size = cv2.WINDOW_FULLSCREEN
+        self.imshow_size = cv2.WINDOW_NORMAL
 
         self.initialize()
 
@@ -54,24 +58,27 @@ class Undistortion:
     def initialize(self):
         """Initialize the needed info"""
         print("self.chessboard_folder_path", self.chessboard_folder_path)
-        print("self.profile_path", self.profile_path)
+        print("self.img_points_path", self.img_points_path)
+        print("self.obj_points_path", self.obj_points_path)
         # 1. Init self.obj_points and self. img_points
         # if self.chessboard_folder_path and os.path.exists(self.chessboard_folder_path):
         if self.chessboard_folder_path:
             print("Use input chessboard folder path:", self.chessboard_folder_path)
             self.img_points, self.obj_points = self.__init_img_obj_points_from_chessboards(self.chessboard_folder_path)
         else:
-            if self.profile_path and os.path.isfile(self.profile_path):
+            if self.img_points_path and os.path.isfile(self.img_points_path) \
+                    and self.obj_points_path and os.path.exists(self.obj_points_path):
                 pass
             else:
-                self.profile_path = self.__select_profile()
-                if not self.profile_path:
+                self.img_points_path, self.obj_points_path = self.__select_profile()
+                if not self.img_points_path or not self.obj_points_path:
                     print("Failed to initialize profile path.")
                     return False
 
-            print("Use profile path:", self.profile_path)
-            self.__init_img_obj_points_by_profile(self.profile_path)
+            print("Use img_points_path:", self.img_points_path)
+            print("Use obj_points_path:", self.obj_points_path)
 
+            self.img_points, self.obj_points = Undistortion.deserialize(self.img_points_path, self.obj_points_path)
         # 2. Init self.para_to_profile
         self.__init_para_to_profile()
 
@@ -118,8 +125,9 @@ class Undistortion:
                     cv2.waitKey(100)
 
                 valid_pics += 1
+                print("Initialized from ", valid_pics, "pictures:", file_name)
             else:
-                print("Failed to findChessboardCorners. Skip current image.")
+                print("Failed to findChessboardCorners. Skip current image:", file_name)
 
         elapsed_time = time.time() - start_time
         cv2.destroyAllWindows()
@@ -147,24 +155,22 @@ class Undistortion:
             # TODO - 2.Find the corresponding profile according to parameters"
             pass
 
-        elif default_profile_path and os.path.isfile(default_profile_path):
-            return default_profile_path
+        elif default_img_points_path and os.path.isfile(default_img_points_path and default_obj_points_path) \
+                and os.path.exists(default_obj_points_path):
+            return default_img_points_path, default_obj_points_path
 
         else:
             return False
 
-    def set_profile_path(self, profile_path):
-        self.profile_path = profile_path
-
-    def chessboard_path_to_profile(self, chessboard_path, profile_path):
+    def chessboard_path_to_profile(self, chessboard_path, img_points_path, obj_points_path):
         """1. Save the points from chessboard path pictures to profile_path
         2. Take the parameter of current cam and consider these pictures are captured by this cam
         3. self.define_para_to_profile: Update para_2_profile_file_path file and self.para_to_profile"""
         img_points, obj_points = self.__init_img_obj_points_from_chessboards(chessboard_path)
-        Undistortion.serialize(img_points, obj_points, profile_path)
+        Undistortion.serialize(img_points, obj_points, img_points_path, obj_points_path)
 
         para = Undistortion.get_cam_para()
-        self.define_para_to_profile(para, profile_path)
+        self.define_para_to_profile(para, img_points_path, obj_points_path)
 
     @staticmethod
     def get_cam_para():
@@ -172,89 +178,37 @@ class Undistortion:
         para = {}
         return para
 
-    def define_para_to_profile(self, para, profile_path):
+    def define_para_to_profile(self, para, img_points_path, obj_points_path):
         """1. Write to para_2_profile_file_path file
         2. Update in memory self.para_to_profile"""
         # TODO define_para_to_profile
         pass
 
     @staticmethod
-    def serialize(img_points, obj_points, profile_path):
-        # TODO - update serialize
-        index = 0
-        img_dictionary = dict()
-        for img_point in img_points:
-            # print("img_point", type(img_point), img_point)
-            # json.dumps(img_point)
-            print("type", type(img_point))
-            img_point_list = img_point.tolist()
-            img_dictionary[index] = img_point_list
+    def serialize(img_points, obj_points, img_path_no_post_fix, obj_path_no_post_fix):
 
-            index += 1
+        img_points_np = np.asarray(img_points)
+        # print("img_points_np shape:", img_points_np.shape)
+        obj_points_np = np.asarray(obj_points)
+        # print("obj_points_np shape:", obj_points_np.shape)
 
-        index = 0
-        obj_dictionary = dict()
-        for obj_point in obj_points:
-            print("type", type(obj_point))
-            obj_point_list = obj_point.tolist()
-            obj_dictionary[index] = obj_point_list
-
-            index += 1
-
-        json_result = {
-            "img_points": img_dictionary,
-            "obj_points": obj_dictionary
-        }
-
-        dictionary_dump = json.dumps(json_result)
-        with open(profile_path, 'w+') as filename:
-            filename.writelines(dictionary_dump)
+        np.save(img_path_no_post_fix, img_points_np)
+        np.save(obj_path_no_post_fix, obj_points_np)
 
         return img_points, obj_points
-        # json.dump(img_dictionary_dump, codecs.open(profile_path, 'w', encoding='utf-8'),
-        #           separators=(',', ':'),
-        #           sort_keys=True, indent=4)
 
     @staticmethod
-    def deserialize(profile_path):
+    def deserialize(img_path, obj_path):
+        if not img_path or not os.path.exists(img_path):
+            print("img_path(", img_path + "):File not exist")
+            return
 
-        obj_text = codecs.open(profile_path, 'r', encoding='utf-8').read()
-        dictionary_load = dict()
+        if not obj_path or not os.path.exists(obj_path):
+            print("obj_path(", obj_path + "):File not exist")
+            return
 
-        try:
-            dictionary_load = json.loads(obj_text)
-        except:
-            print("Failed to load as jason:", profile_path)
-            exit()
-
-        print("dictionary_load", len(dictionary_load))
-
-        # 1. Deserialize img_points
-        if "img_points" not in dictionary_load:
-            print("img_points not in dictionary_load")
-            exit()
-        deserialized_img_points = dictionary_load["img_points"]
-        print("len(deserialized_img_points)", len(deserialized_img_points))
-
-        img_points = []
-        for img_point in deserialized_img_points.values():
-            img_point_np = np.array(img_point)
-            print("After deserialization: type", type(img_point_np))
-            img_points.append(img_point_np)
-
-        # 2. Deserialize obj_points
-        if "obj_points" not in dictionary_load:
-            print("obj_points not in dictionary_load")
-            exit()
-
-        deserialized_obj_points = dictionary_load["obj_points"]
-        print("len(deserialized_obj_points)", len(deserialized_obj_points))
-
-        obj_points = []
-        for obj_point in deserialized_obj_points.values():
-            obj_point_np = np.array(obj_point)
-            print("After deserialization: type", type(obj_point_np))
-            obj_points.append(obj_point_np)
+        img_points = np.load(img_path)
+        obj_points = np.load(obj_path)
 
         return img_points, obj_points
 
@@ -271,29 +225,49 @@ class Undistortion:
 
         # return result
 
-    def __init_img_obj_points_by_profile(self, profile_path):
-        self.img_points, self.obj_points = Undistortion.deserialize(profile_path)
-
     def calibrate_image(self, image):
         """Input a single frame and return the frame after undistortion"""
-        start_time = time.time()
+        # start_time = time.time()
+        # print("Start calibrate_image")
+        if self.obj_points is None or self.img_points is None:
+            print("not self.obj_points or not self.img_points")
 
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        # print("gray", gray)
+
         ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(self.obj_points, self.img_points,
                                                            gray.shape[::-1], None, None)
+        # print("mtx", mtx)  # no change
+        # print("dist", dist)  # no change
+
         h, w = image.shape[:2]
         new_camera_mtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
+        # print("new_camera_mtx", new_camera_mtx)  # no change
+
+        cv2.namedWindow("before undistortion", self.imshow_size)
+        cv2.imshow("before undistortion", image)
 
         dst = cv2.undistort(image, mtx, dist, None, new_camera_mtx)
+        # mapx, mapy = cv2.initUndistortRectifyMap(mtx, dist, None, new_camera_mtx, (w, h), 5)
+        # dst = cv2.remap(image, mapx, mapy, cv2.INTER_LINEAR)
+
+        cv2.namedWindow("after undistortion", self.imshow_size)
+        cv2.imshow("after undistortion", dst)
 
         if self.crop:
             # crop the image
             x, y, w, h = roi
             dst = dst[y:y + h, x:x + w]
+            cv2.namedWindow("crop", self.imshow_size)
+            cv2.imshow("crop", dst)
 
-        elapsed_time = time.time() - start_time
-        print("Undistort in :", elapsed_time)
+        # cv2.waitKey(10000)
+        # print("haha")
 
+        # elapsed_time = time.time() - start_time
+        # print("Undistort in :", elapsed_time)
+
+        # cv2.destroyAllWindows()
         return dst
 
     def calibrate_images(self, to_calibrate_path):
