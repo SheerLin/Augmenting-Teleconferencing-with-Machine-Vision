@@ -5,16 +5,22 @@ import beautifier
 import extractor
 import undistortion
 
+SAMPLE_FREQ = 10
+MEAN_LENGTH  = 10
+
 class Engine:
 
     def __init__(self, width, height):
         self.width = width
         self.height = height
         self.frame_num = 0
+        self.run_pre = []
+        self.run_post = []
+
         self.extractor = extractor.Extractor({
             'width': self.width,
             'height': self.height,
-            'freq': 10,
+            'freq': SAMPLE_FREQ,
             'closeness': 20
         })
         # self.undistort_instance = undistortion.Undistortion(profile_path=None,
@@ -23,10 +29,27 @@ class Engine:
 
         })
 
+    def average(self, src, run):
+        if len(run) == MEAN_LENGTH:
+            # Discard first frame
+            run.pop(0)
+        # Add new frame
+        run.append(src)
+        
+        # Compute average frame
+        # weights=range(10)
+        src = np.average(np.array(run), axis=0).astype(np.uint8)
+        
+        return src
+    
     def process(self, orig):
         src = orig.copy()
+        cv2.imshow('oirg', src)
+        
+        src = self.average(src, self.run_pre)
         
         # src = self.undistort_instance(src)
+        # cv2.imshow('undistorter', src)
 
         src = self.extractor(src, self.frame_num)
         # cv2.imshow('extractor', src)
@@ -34,9 +57,11 @@ class Engine:
         src = self.beautifier(src)
         # cv2.imshow('beautifier', src)
 
+        # src = self.average(src, self.run_post)
+        
         self.frame_num += 1
-        # show = np.hstack([orig, src])
-        # cv2.imshow('Video', show)
+        show = np.hstack([orig, src])
+        cv2.imshow('Video', show)
         return src
 
 ####################

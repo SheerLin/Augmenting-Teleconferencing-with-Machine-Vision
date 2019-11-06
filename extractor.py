@@ -128,13 +128,6 @@ class Extractor:
         src_sharp = cv2.filter2D(src, -1, kernel)
         # cv2.imshow('Sharp', src_sharp)
 
-        # TODO smooth filter
-        # Apply smoothening preserving edge
-        # Saves more info
-        # src = src_sharp
-        # src_filter = cv2.edgePreservingFilter(src, flags=cv2.RECURS_FILTER, sigma_s=60, sigma_r=0.4)
-        # cv2.imshow('Filter', src_filter)
-
         # TODO check HUE space
         # Filter out other colors
         src = src_sharp

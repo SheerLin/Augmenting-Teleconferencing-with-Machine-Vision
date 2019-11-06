@@ -17,14 +17,19 @@ def run_watcher():
         if 'IN_OPEN' in types_names:
             proc = subprocess.Popen(["python3","main.py"])
             p.append(proc)
-            # print("open", str(p))
+            print("open", str(p))
         
-        if 'IN_CLOSE_NOWRITE' in types_names or 'IN_CLOSE_WRITE' in types_names:
-            # print("killing", str(p))
+        if 'IN_CLOSE_NOWRITE' in types_names:
+            print("killing one", str(p))
+            if len(p) > 0:
+                proc = p.pop()
+                proc.kill()
+
+        if 'IN_CLOSE_WRITE' in types_names:
+            print("killing all", str(p))
             for proc in p:
                 proc.kill()
             p = []
-
 
 if __name__ == '__main__':
     run_watcher()

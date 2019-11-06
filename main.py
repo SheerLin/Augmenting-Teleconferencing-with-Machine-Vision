@@ -9,12 +9,19 @@ import v4l2
 
 import engine
 
-# video0 is the integrated web cam
-CAM_DEVICE_NUMBER = 0
-# CAM_DEVICE_NUMBER = 6
+# video0 is the virtual camera capture device
+# video1 is the virtual camera output device
+# video2 is the integrated web cam
+# video3 is the integrated web cam
+# video4 is the integrated web cam
+# video5 is the integrated web cam
+# video6 is the usb cam
+# video7 is the usb cam
+# video8 is the usb cam
+# video9 is the usb cam
 
-# video4 is the virtual camera capture device
-CAP_DEVICE_NUMBER = 4
+CAP_DEVICE_NUMBER = 0
+CAM_DEVICE_NUMBER = 6
 
 # frame size
 # WIDTH, HEIGHT = (1920, 1080)
@@ -66,6 +73,8 @@ def process_video(cam_device, cap_device):
             out = eng.process(im)
             if cap_device is not None:
                 cap_device.write(out)
+            else:
+                print("Bad Cap Device")
             # cv2.namedWindow('Orig', cv2.WINDOW_NORMAL)
             # cv2.imshow("Orig", im)
             # cv2.imshow("Video", out)

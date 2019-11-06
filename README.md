@@ -68,7 +68,7 @@ sudo insmod akvcam.ko
 ### remove mod
 ```
 cd akvcam/src
-    sudo rmmod akvcam.ko
+sudo rmmod akvcam.ko
 ```
 
 ## Python Lib
