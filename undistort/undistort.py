@@ -64,73 +64,54 @@ for fname in images:
 
 elapsed_time = time.time() - start_time
 cv2.destroyAllWindows()
-print("Collect 3d point from ", valid_pics, " pictures:", elapsed_time)
-print("imgpoints", type(imgpoints), "len=", len(imgpoints))
-print("objpoints", type(objpoints))
+print("Collect 3d point from ", valid_pics, " valid pictures after scanning all ", len(images), " pictures:",
+      elapsed_time)
 
-index = 0
-dictionary = dict()
-for imgpoint in imgpoints:
-    # print("imgpoint", type(imgpoint), imgpoint)
-    # json.dumps(imgpoint)
-    imgpoint_list = imgpoint.tolist()
-    dictionary[index] = imgpoint_list
 
-    index += 1
+# index = 0
+# dictionary = dict()
+# print("imgpoints", type(imgpoints), "len=", len(imgpoints))
+# print("objpoints", type(objpoints), "len=", len(objpoints))
 
-dictionary_dump = json.dumps(dictionary)
-with open(imgpoints_profile_path, 'w+') as filename:
-    filename.writelines(dictionary_dump)
-
-json.dump(dictionary_dump, codecs.open(imgpoints_profile_path2, 'w', encoding='utf-8'), separators=(',', ':'),
-          sort_keys=True, indent=4)
-
-obj_text = codecs.open(imgpoints_profile_path, 'r', encoding='utf-8').read()
-b_new = json.loads(obj_text)
-print("b_new", len(b_new))
-
-index = 0
-for b in b_new.values():
-    # print(b)
-    b_np = np.array(b)
-    imgpoint_np = imgpoints[index]
-    index += 1
-    print(np.equal(b_np, imgpoint_np))
-
-    # print("type", type(b))
-
-# imgpoints_list = imgpoints.tolist()
-# objpoints_list = objpoints.tolist()
-
-# obj = {
-#     "imgpoints": imgpoints_list,
-#     "objpoints": objpoints_list
-# }
+# for imgpoint in imgpoints:
+#     # print("imgpoint", type(imgpoint), imgpoint)
+#     # json.dumps(imgpoint)
+#     imgpoint_list = imgpoint.tolist()
+#     dictionary[index] = imgpoint_list
 #
-# encoded = json.dumps(obj)
+#     index += 1
 #
-# with open(saved_profile_path, 'w+') as filename:
-#     filename.writelines(encoded)
-
-# json.dump(imgpoints, codecs.open(imgpoints_profile_path, 'w', encoding='utf-8'), separators=(',', ':'), sort_keys=True, indent=4)
-# json.dump(objpoints, codecs.open(objpoints_profile_path, 'w', encoding='utf-8'), separators=(',', ':'), sort_keys=True, indent=4)
-### this saves the array in .json format
-
-exit()
+# dictionary_dump = json.dumps(dictionary)
+# with open(imgpoints_profile_path, 'w+') as filename:
+#     filename.writelines(dictionary_dump)
+#
+# json.dump(dictionary_dump, codecs.open(imgpoints_profile_path2, 'w', encoding='utf-8'), separators=(',', ':'),
+#           sort_keys=True, indent=4)
+#
+# obj_text = codecs.open(imgpoints_profile_path, 'r', encoding='utf-8').read()
+# dictionary_load = json.loads(obj_text)
+# print("dictionary_load", len(dictionary_load))
+#
+# index = 0
+# for de_imgpoint in dictionary_load.values():
+#     de_imgpoint_np = np.array(de_imgpoint)
+#     imgpoint_np = imgpoints[index]
+#     index += 1
+#     # print(np.equal(de_imgpoint_np, imgpoint_np))
+#
+#
+# exit()
 
 start_time = time.time()
 ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
 
-# img = cv2.imread('data/chessboard/left12.jpg')
 for f in glob.glob(to_calibrate_path + 'calibrated/*'):
     os.remove(f)
 
 distorted_images = glob.glob(to_calibrate_path + 'original/*.jpg')
 index = 1
-print("start")
 
 for fname in distorted_images:
-    # print(fname)
     img = cv2.imread(fname)
 
     h, w = img.shape[:2]

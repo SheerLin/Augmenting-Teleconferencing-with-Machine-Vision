@@ -17,8 +17,7 @@ class Engine:
             'freq': 10,
             'closeness': 20
         })
-        # self.undistort_instance = undistortion.Undistortion(profile_path=None,
-        #                                                     chessboard_folder_path=undistortion.default_chessboard_path)
+        # self.undistort_instance = undistortion.Undistortion()
         self.beautifier = beautifier.Beautifier({
 
         })
@@ -26,7 +25,7 @@ class Engine:
     def process(self, orig):
         src = orig.copy()
         
-        # src = self.undistort_instance(src)
+        # src = self.undistort_instance(orig)
 
         src = self.extractor(src, self.frame_num)
         # cv2.imshow('extractor', src)
