@@ -96,7 +96,7 @@ the `v4l2_priority` line ought to be
 
 ## Run
 ```
-python main.py
+python3 main.py
 ```
 
 
