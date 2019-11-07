@@ -68,16 +68,17 @@ def process_video(cam_device, cap_device):
     while True:
         try:
             ret, im = cam_device.read()
+            
             if not ret:
+                print("End of Input Stream")
                 break
             out = eng.process(im)
-            if cap_device is not None:
-                cap_device.write(out)
-            else:
-                print("Bad Cap Device")
-            # cv2.namedWindow('Orig', cv2.WINDOW_NORMAL)
-            # cv2.imshow("Orig", im)
-            # cv2.imshow("Video", out)
+            
+            if cap_device is None:
+                print("Bad Capture Device")
+                break
+            cap_device.write(out)
+
         except Exception as e:
             print(e)
             break
@@ -86,10 +87,23 @@ def process_video(cam_device, cap_device):
         if cv2.waitKey(1) == 27:
             break
 
+def parse_args(args):
+    if len(args) >= 2:
+        cap_device_number = args[1]
+    if cap_device_number.isdigit():
+        cap_device_number = int(cap_device_number)
+    
+    if len(args) >= 3:
+        cam_device_number = args[2]
+    if cam_device_number.isdigit():
+        cam_device_number = int(cam_device_number)
+    
+    return cap_device_number, cam_device_number
 
 if __name__== "__main__":
-    if len(sys.argv) >= 2:
-        CAP_DEVICE_NUMBER = sys.argv[1]
+    CAP_DEVICE_NUMBER, CAM_DEVICE_NUMBER = parse_args(sys.argv)
+    print("CAP_DEVICE_NUMBER", CAP_DEVICE_NUMBER)
+    print("CAM_DEVICE_NUMBER", CAM_DEVICE_NUMBER)
     
     cap_device = get_cap_device(CAP_DEVICE_NUMBER)
     cam_device = cv2.VideoCapture(CAM_DEVICE_NUMBER)

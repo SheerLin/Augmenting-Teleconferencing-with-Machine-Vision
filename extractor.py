@@ -12,116 +12,23 @@ class Extractor:
         self.new_points = None
         self.new_dims = None
         self.new_seen = 0
-        self.dims_center = (300, 100, 40, 40)
+        self.dims_center = params['center']
         self.width = params['width']
         self.height = params['height']
         self.area = self.width * self.height
-        self.logfile = open("extractPoints.log", "w")
+        self.logfile = None
+        if params['benchmark']:
+
+            self.logfile = open("extract_points.log", "w")
 
     def __call__(self, src, frame_num):
         return self.extract_whiteboard(src, frame_num)
 
-    def pipelineA(self, src):
-        orig = src.copy()
-
-        # Lower the contrast
-        # alpha 1  beta 0      --> no change
-        # 0 < alpha < 1        --> lower contrast
-        # alpha > 1            --> higher contrast
-        # -127 < beta < +127   --> good range for brightness values
-        alpha = 0.7
-        beta = -10
-        src_contrast = cv2.addWeighted(src, alpha, src, 0, beta)
-        # cv2.imshow('Contrast', src_contrast)
-
-        # Apply Color Filter
-        src = src_contrast
-        b = []
-        g = []
-        r = []
-        for h in range(100, 140): # 480
-            for w in range(300, 340): # 640
-                b.append(src[h][w][0])
-                g.append(src[h][w][1])
-                r.append(src[h][w][2])
-                for k in range(3):
-                    src[h][w][k] = 255
-        avg_b = sum(b)/len(b)
-        avg_g = sum(g)/len(g)
-        avg_r = sum(r)/len(r)
-        delta = 35
-        m = 1.5
-        lower = np.array([avg_b-delta, avg_g-delta, avg_r-delta], dtype = 'uint8')
-        upper = np.array([avg_b+m*delta, avg_g+m*delta, avg_r+m*delta], dtype = 'uint8')
-        mask = cv2.inRange(src, lower, upper)
-        src_white = cv2.bitwise_and(src, src, mask = mask)
-        cv2.imshow('White', src_white)
-
-        # Apply Morphing
-        src = src_white
-        morph = src
-        kernel = np.ones((5, 5), np.uint8)
-        iterations = 2
-        morph = cv2.dilate(morph, kernel, iterations=iterations)
-        morph = cv2.erode(morph, kernel, iterations=iterations)
-        cv2.imshow('Open', morph)
-
-        morph = cv2.erode(morph, kernel, iterations=iterations)
-        morph = cv2.dilate(morph, kernel, iterations=iterations)
-        cv2.imshow('Close', morph)
-
-        # Convert the color from BGR to Gray
-        src = morph
-        src_gray = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
-        cv2.imshow('Gray', src_gray)
-
-        # Apply blurring to smoothen
-        src = src_gray
-        src_blur = cv2.GaussianBlur(src, (5, 5), 3, borderType=cv2.BORDER_ISOLATED)
-        cv2.imshow('Blur', src_blur)
-
-        # Apply mean adaptive theshold
-        src = src_blur
-        src_thresh = cv2.adaptiveThreshold(src, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                cv2.THRESH_BINARY, 11, 3)
-        cv2.imshow('Thresh', src_thresh)
-
-        _, src_thresh2 = cv2.threshold(src, 70, 255, cv2.THRESH_BINARY)
-        cv2.imshow('Thresh2', src_thresh2)
-
-        # Apply Erosion
-        src = src_thresh
-        kernel = np.ones((5, 5), np.uint8)
-        iterations = 1
-        img_erosion = cv2.erode(src, kernel, iterations=iterations+1)
-        cv2.imshow('Erosion2', img_erosion)
-        # Apply Dilation
-        src = img_erosion
-        img_dilation = cv2.dilate(src, kernel, iterations=iterations)
-        cv2.imshow('Dilation2', img_dilation)
-
-        # Apply Edgedetection
-        # edges = cv2.Canny(src, 50, 70)
-        # cv2.imshow('Edges', edges)
-
-        # Find contours
-        src = img_dilation
-        contours, _ = cv2.findContours(src, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
-        contours = sorted(contours, key = cv2.contourArea)
-        # Find approx rectangle contours
-        for c in contours[-5:]:
-            peri = cv2.arcLength(c, True)
-            approx = cv2.approxPolyDP(c, 0.04 * peri, True)
-            edges = len(approx)
-            # if edges >= 3 and edges <= 5:
-            cv2.drawContours(orig, [c], 0, (0, 255, 0), 2)
-        cv2.imshow('Contours', orig)
-
-    def pipelineB(self, orig):
+    def detect_wb_contour(self, orig):
         (center_x, center_y, center_box_w, center_box_h) = self.dims_center
     
         # Apply sharpening filter
-        src = orig.copy()
+        src = orig
         kernel = np.array([[-1,-1,-1],
                            [-1, 9,-1],
                            [-1,-1,-1]])
@@ -178,23 +85,24 @@ class Extractor:
 
         # Find and draw big, rectangular contours (connected regions)
         src = morph
-        src_ex = orig.copy()
+        src_ex = orig
         contours, _ = cv2.findContours(src, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
         src_ex, (x, y, w, h) = self.find_wb_contour(src_ex, contours)
 
         # Draw color filter box
+        # debug
         cv2.rectangle(src_ex, (center_x,center_y), (center_x+center_box_w,center_y+center_box_h), (0,0,255), 2)
         
         return src_ex, (x,y,w,h)
 
-    def pipelineC(self, orig, dims, width, height):
+    def detect_wb_edges(self, orig, dims, width, height):
         (x,y,w,h) = dims
 
         # Crop
-        src = orig.copy()
+        src = orig
         src_crop = src[y:y+h, x:x+w]
         
-        src = src_crop.copy()
+        src = src_crop
         src_gray = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)	
         # cv2.imshow("Gray", src_gray)        
         
@@ -224,16 +132,16 @@ class Extractor:
         lines = cv2.HoughLinesP(src_edges, rho, theta, threshold, None, minLineLength, maxLineGap)
         if lines is None:
             points = np.array([[x, y], [x+w, y], [x, y+h], [x+w, y+h]])
-            return orig.copy(), points
+            return orig, points
 
         # Find points for cropping
-        src_hough = src_crop.copy()
+        src_hough = src_crop
         points = find_rect(src_hough, lines)
         # cv2.imshow("Hough", src_hough)
 
-        src_ex = orig.copy()
+        src_ex = orig
         src_ex[y:y+h, x:x+w] = src_hough[:,:]
-        
+
         return src_ex, points
 
     def find_wb_contour(self, src_ex, contours):
@@ -253,6 +161,7 @@ class Extractor:
             is_center_y = y <= center_y + center_box_h/2 and y+h >= center_y+center_box_h/2
             
             if is_rectangular and is_big and is_center_x and is_center_y:
+                # debug
                 cv2.drawContours(src_ex, [c], 0, (0, 255, 0), 2)
                 cv2.rectangle(src_ex, (x,y), (x+w,y+h), (255,0,0), 2)
                 break
@@ -264,7 +173,7 @@ class Extractor:
             cur_points = points + dims[:2]
             
             if np.allclose(saved_points, cur_points, atol=closeness):
-                print('Close Points')
+                print('### Close Points ###')
                 self.new_points = None
                 self.new_dims = None
                 self.new_seen = 0
@@ -273,7 +182,7 @@ class Extractor:
                     new_points = self.new_points + self.new_dims[:2]
                     if np.allclose(new_points, cur_points, atol=closeness):
                         if self.new_seen == 3:
-                            print('### Switch Points ###')
+                            print('>>> Switch Points <<<')
                             self.points = points
                             self.dims = dims
                             self.new_points = None
@@ -303,33 +212,36 @@ class Extractor:
         src = src[y:y+h, x:x+w]
         src = four_point_transform(src, self.points, self.width, self.height)
 
-        for i in range(len(self.points)):
-            self.logfile.write(str(self.points[i][0]) + "," + str(self.points[i][1]) + ";")
-        self.logfile.write("\n")
+        if self.logfile:
+            for i in range(len(self.points)):
+                self.logfile.write(str(self.points[i][0]) + "," + str(self.points[i][1]) + ";")
+            self.logfile.write("\n")
+        
         return src
 
-    def extract_whiteboard(self, src, frame_num):
+    def extract_whiteboard(self, orig, frame_num):
+        src = orig.copy()
         width = self.params['width']
         height = self.params['height']
         
         # Skip processing if not sampling frame
         if frame_num % self.params['freq'] != 0:
             if self.points is not None:
-                src_ex = self.crop(src.copy())
+                src_ex = self.crop(orig)
             else:
-                src_ex = src
+                src_ex = orig
             return src_ex
 
-        # Detect whitebroad
-        src_a, dims = self.pipelineB(src.copy())
-        src_b, points = self.pipelineC(src.copy(), dims, width, height)
+        # Detect whiteboard
+        src_a, dims = self.detect_wb_contour(src)
+        src_b, points = self.detect_wb_edges(src, dims, width, height)
         
         if points is not None:
             self.update_points(points, dims, self.params['closeness'])
             
         # Extract whiteboard
         if self.points is not None:
-            src_ex = self.crop(src.copy())
+            src_ex = self.crop(orig)
             show = np.hstack([src_a, src_b])
             # cv2.imshow('Processing', show)
             return src_ex
