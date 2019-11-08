@@ -14,20 +14,17 @@ default_chessboard_path2 = "undistort/data/chessboard/original4/*"
 default_img_points_path = profiles_folder + "/img1" + npy_file_postfix
 default_obj_points_path = profiles_folder + "/obj1" + npy_file_postfix
 
-# TODO - needed for selecting profile
-para_2_profile_file_path = ""
+# For selecting profile
+para_2_profile_file_path = profiles_folder + "/profile_mapping"
 
 
-# original_chessboard_path = 'data/chessboard/original/*.jpg'
 # to_calibrate_path = 'data/distorted/'
-# imgpoints_profile_path = 'profiles/profile1_imgpoints.txt'
-# objpoints_profile_path = 'profiles/profile1_objpoints.txt'
 
-
+# General steps
 #  1. If has chessboards images folder path, use this path to get point.
-#  2. if has profile path, use this profile
+#  2. if has profile path for image points and obj_points, use this profile
 #  3. If no profile path and no has chessboards images folder path, select from the existing profiles
-#  4. undistort the image
+#  4. Undistort the image
 
 
 class Undistortion:
@@ -40,15 +37,15 @@ class Undistortion:
         # Arrays to store object points and image points from all the images.
         self.obj_points = []  # 3d point in real world space
         self.img_points = []  # 2d points in image plane.
-        self.para_to_profile = dict()  # Profile for selecting profile
+        self.device_to_profile = dict()  # Profile for selecting profile
 
         # debug
-        self.show_image = False
+        self.show_image = True
         self.save_image = False
         self.both_way = False
         self.crop = True
-        # self.imshow_size = cv2.WINDOW_FULLSCREEN
-        self.imshow_size = cv2.WINDOW_NORMAL
+        self.imshow_size = cv2.WINDOW_NORMAL  # cv2.WINDOW_FULLSCREEN
+        self.default_remap = False
 
         self.initialize()
 
@@ -57,14 +54,21 @@ class Undistortion:
 
     def initialize(self):
         """Initialize the needed info"""
+        print("Start initialization for undistortion")
+
+        # 1. Init self.device_to_profile
+        self.__init_profile_mapping()
+
         print("self.chessboard_folder_path", self.chessboard_folder_path)
         print("self.img_points_path", self.img_points_path)
         print("self.obj_points_path", self.obj_points_path)
-        # 1. Init self.obj_points and self. img_points
+
+        # 2. Init self.obj_points and self. img_points
         # if self.chessboard_folder_path and os.path.exists(self.chessboard_folder_path):
         if self.chessboard_folder_path:
             print("Use input chessboard folder path:", self.chessboard_folder_path)
-            self.img_points, self.obj_points = self.__init_img_obj_points_from_chessboards(self.chessboard_folder_path)
+            self.img_points, self.obj_points = Undistortion.init_img_obj_points_from_chessboards(
+                self.chessboard_folder_path)
         else:
             if self.img_points_path and os.path.isfile(self.img_points_path) \
                     and self.obj_points_path and os.path.exists(self.obj_points_path):
@@ -79,10 +83,9 @@ class Undistortion:
             print("Use obj_points_path:", self.obj_points_path)
 
             self.img_points, self.obj_points = Undistortion.deserialize(self.img_points_path, self.obj_points_path)
-        # 2. Init self.para_to_profile
-        self.__init_para_to_profile()
 
-    def __init_img_obj_points_from_chessboards(self, chessboard_path):
+    @staticmethod
+    def init_img_obj_points_from_chessboards(chessboard_path):
         """Get image points and object points from the pictures in the chessboard_path"""
         start_time = time.time()
         print("in __init_img_obj_points_from_chessboards")
@@ -119,10 +122,9 @@ class Undistortion:
                 img_points.append(corners2)
 
                 # Draw and display the corners
-                if self.show_image:
-                    img = cv2.drawChessboardCorners(img, (7, 6), corners2, ret)
-                    cv2.imshow('img', img)
-                    cv2.waitKey(100)
+                # img = cv2.drawChessboardCorners(img, (7, 6), corners2, ret)
+                # cv2.imshow('img', img)
+                # cv2.waitKey(100)
 
                 valid_pics += 1
                 print("Initialized from ", valid_pics, "pictures:", file_name)
@@ -137,21 +139,23 @@ class Undistortion:
 
         return img_points, obj_points
 
-    def __init_para_to_profile(self):
+    def __init_profile_mapping(self):
+        """Reading from mapping profile to initialize self.device_to_profile"""
         if para_2_profile_file_path and os.path.isfile(para_2_profile_file_path):
-            # TODO - read from para_2_profile_file_path to construct self.para_to_profile
-            print(self.para_to_profile)
+            # TODO - read from para_2_profile_file_path to construct self.device_to_profile
+            print(self.device_to_profile)
             pass
         else:
             return False
 
     def __select_profile(self):
-        """1. Find out camera parameter
-        2. Find the corresponding profile according to parameters"""
+        """1. Find current usb devices and check if it matches with the existing mapping
+        2. Find the corresponding profile according to devices, if multiple available devices found
+        Let user select with device(profile) to be used"""
 
-        if len(self.para_to_profile.keys()) > 0:
-            # 1. Find out camera parameter
-            para = Undistortion.get_cam_para()
+        if len(self.device_to_profile.keys()) > 0:
+            # 1. Find out list of devices
+            list_of_devices = Undistortion.get_usb_devices()
             # TODO - 2.Find the corresponding profile according to parameters"
             pass
 
@@ -162,26 +166,25 @@ class Undistortion:
         else:
             return False
 
-    def chessboard_path_to_profile(self, chessboard_path, img_points_path, obj_points_path):
-        """1. Save the points from chessboard path pictures to profile_path
-        2. Take the parameter of current cam and consider these pictures are captured by this cam
-        3. self.define_para_to_profile: Update para_2_profile_file_path file and self.para_to_profile"""
-        img_points, obj_points = self.__init_img_obj_points_from_chessboards(chessboard_path)
-        Undistortion.serialize(img_points, obj_points, img_points_path, obj_points_path)
-
-        para = Undistortion.get_cam_para()
-        self.define_para_to_profile(para, img_points_path, obj_points_path)
+    @staticmethod
+    def get_usb_devices():
+        # TODO - Get the list of usb devices
+        usb_devices = list()
+        return usb_devices
 
     @staticmethod
-    def get_cam_para():
-        # TODO - Get the parameter
-        para = {}
-        return para
+    def chessboard_path_to_profile(chessboard_path, img_points_path, obj_points_path, devices: list):
+        """1. Save the points from chessboard path pictures to img_points_path, obj_points_path
+        2. Take devices list and add the mapping to para_2_profile_file_path"""
+        img_points, obj_points = Undistortion.init_img_obj_points_from_chessboards(chessboard_path)
+        Undistortion.serialize(img_points, obj_points, img_points_path, obj_points_path)
 
-    def define_para_to_profile(self, para, img_points_path, obj_points_path):
-        """1. Write to para_2_profile_file_path file
-        2. Update in memory self.para_to_profile"""
-        # TODO define_para_to_profile
+        if devices and len(devices) > 0:
+            Undistortion.define_para_to_profile(devices, img_points_path, obj_points_path)
+
+    @staticmethod
+    def define_para_to_profile(devices: list, img_points_path, obj_points_path):
+        """TODO - Write to para_2_profile_file_path file"""
         pass
 
     @staticmethod
@@ -227,53 +230,45 @@ class Undistortion:
 
     def calibrate_image(self, image):
         """Input a single frame and return the frame after undistortion"""
-        # start_time = time.time()
-        # print("Start calibrate_image")
         if self.obj_points is None or self.img_points is None:
             print("not self.obj_points or not self.img_points")
 
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        # print("gray", gray)
 
         ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(self.obj_points, self.img_points,
                                                            gray.shape[::-1], None, None)
-        # print("mtx", mtx)  # no change
-        # print("dist", dist)  # no change
 
         h, w = image.shape[:2]
         new_camera_mtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
-        # print("new_camera_mtx", new_camera_mtx)  # no change
 
-        # cv2.namedWindow("before undistortion", self.imshow_size)
-        # cv2.imshow("before undistortion", image)
+        if self.show_image:
+            cv2.namedWindow("before undistortion", self.imshow_size)
+            cv2.imshow("before undistortion", image)
 
-        dst = cv2.undistort(image, mtx, dist, None, new_camera_mtx)
-        # mapx, mapy = cv2.initUndistortRectifyMap(mtx, dist, None, new_camera_mtx, (w, h), 5)
-        # dst = cv2.remap(image, mapx, mapy, cv2.INTER_LINEAR)
+        if not self.default_remap:
+            dst = cv2.undistort(image, mtx, dist, None, new_camera_mtx)
+        else:
+            mapx, mapy = cv2.initUndistortRectifyMap(mtx, dist, None, new_camera_mtx, (w, h), 5)
+            dst = cv2.remap(image, mapx, mapy, cv2.INTER_LINEAR)
 
-        # cv2.namedWindow("after undistortion", self.imshow_size)
-        # cv2.imshow("after undistortion", dst)
+        if self.show_image:
+            cv2.namedWindow("after undistortion", self.imshow_size)
+            cv2.imshow("after undistortion", dst)
 
         if self.crop:
             # crop the image
             x, y, w, h = roi
             dst = dst[y:y + h, x:x + w]
-            # cv2.namedWindow("crop", self.imshow_size)
-            # cv2.imshow("crop", dst)
+            if self.show_image:
+                cv2.namedWindow("crop", self.imshow_size)
+                cv2.imshow("crop", dst)
 
-        # cv2.waitKey(10000)
-        # print("haha")
-
-        # elapsed_time = time.time() - start_time
-        # print("Undistort in :", elapsed_time)
-
-        # cv2.destroyAllWindows()
         return dst
 
     def calibrate_images(self, to_calibrate_path):
         """Calibrate all pictures under to_calibrate_path"""
         start_time = time.time()
-        # TODO - what is gray?
+        # TODO - How to defind gray
         ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(self.obj_points, self.img_points,
                                                            gray.shape[::-1], None, None)
 
@@ -359,3 +354,9 @@ class Undistortion:
         print("Undistort", len(distorted_images), " pictures:", elapsed_time)
 
         cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    # TODO - Main function is for build profile for a list of devices
+    # TODO - Need to update readme upon completion of the function
+    pass
