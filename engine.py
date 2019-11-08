@@ -89,9 +89,8 @@ class Engine:
         
         src = self.undistorter(src).copy(order='C')        
         # cv2.imshow('undistorter', src)
-
-        src = self.extractor(src, self.frame_num)
-        # cv2.imshow('extractor', src)
+        # cv2.waitKey(200)
+        # cv2.imwrite('tmp/' + str(self.frame_num) + '_original.jpg', src)
 
         src = self.beautifier(src)
         # cv2.imshow('beautifier', src)

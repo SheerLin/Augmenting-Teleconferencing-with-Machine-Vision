@@ -23,6 +23,7 @@ default_obj_points_path = profiles_folder + "/default_obj"
 device_profile_mapping_file = profiles_folder + "/profile_mapping.txt"
 DELIMITER = ","
 default_profile_symbol = "D"
+none_profile_symbol = "N"
 
 
 # to_calibrate_path = 'data/distorted/'
@@ -58,11 +59,15 @@ class Undistortion:
         self.imshow_size = cv2.WINDOW_NORMAL  # cv2.WINDOW_FULLSCREEN
         self.default_remap = False
         self.find_all_device = False
+        self.skip_undistort = False
 
         self.initialize()
 
     def __call__(self, img):
-        return self.calibrate_image(img)
+        if not self.skip_undistort:
+            return self.calibrate_image(img)
+        else:
+            return img
 
     def initialize(self):
         """Initialize the needed info"""
@@ -142,6 +147,7 @@ class Undistortion:
                 print("Initialized from ", valid_pics, "pictures:", file_name)
             else:
                 print("Failed to findChessboardCorners. Skip current image:", file_name)
+                os.remove(file_name)
 
         elapsed_time = time.time() - start_time
         cv2.destroyAllWindows()
@@ -252,6 +258,13 @@ class Undistortion:
                     # Enable default profiling
                     if str(user_selected) == default_profile_symbol:
                         break
+
+                    #  Enable skipping undistortion
+                    elif str(user_selected) == none_profile_symbol:
+                        self.skip_undistort = True
+                        print("Skipping undistortion!")
+                        break
+
                     else:
                         print("Invalid input:", user_selected)
 
@@ -277,7 +290,9 @@ class Undistortion:
         padding = "    "
         id_to_profile_pair = dict()
         # print(name, ":")
-        print("Please select a profile by entering the #:(or \"" + default_profile_symbol + "\" for default profile)")
+        print("Please select a profile by entering the #:\n"
+              "(or \"" + default_profile_symbol + "\" for default profile, "
+                                                  "\"" + none_profile_symbol + "\" for not to undistort)")
         for cur_device, cur_pair_list_or_set in profile_map.items():
             cur_pair_list = list(cur_pair_list_or_set)
             print(padding + Undistortion.get_usb_device(device_id=cur_device))
@@ -620,11 +635,11 @@ def usage():
 if __name__ == "__main__":
     # Main function is for build profile for a list of devices
     chessboard_path, img_path, obj_path, device_list = parse_args(sys.argv)
-    # print("chessboard_path", chessboard_path)
-    # print("img_path", img_path)
-    # print("obj_path", obj_path)
-    # print("device_list", device_list)
-    # Undistortion.chessboard_path_to_profile(chessboard_path, img_path, obj_path, device_list)
+    print("chessboard_path", chessboard_path)
+    print("img_path", img_path)
+    print("obj_path", obj_path)
+    print("device_list", device_list)
+    Undistortion.chessboard_path_to_profile(chessboard_path, img_path, obj_path, device_list)
 
     # Example:
     # Undistortion.chessboard_path_to_profile(

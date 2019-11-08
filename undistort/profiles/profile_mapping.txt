@@ -1,13 +1,16 @@
-05a3:9230,undistort/profiles/test_img1,undistort/profiles/test_obj1
-test,undistort/profiles/test_img1,undistort/profiles/test_obj1
-test,undistort/profiles/img1,undistort/profiles/obj1
-05a3:9230,undistort/profiles/img1,undistort/profiles/obj1
-lllll
-test2,fakepath1,fakepath2
-05a3:9230,fakepath1,fakepath2
+05a3:9230,undistort/profiles/original2_img,undistort/profiles/original2_obj
+05a3:9230,undistort/profiles/original3_img,undistort/profiles/original3_obj
+05a3:9230,undistort/profiles/original4_img,undistort/profiles/original4_obj
 05a3:9230,undistort/profiles/default_img,undistort/profiles/default_obj
-05a3:9230,fakepath1,fakepath2,m
-05a3:9230,fakepath1,fakepath2
-,undistort/profiles/test_img1,undistort/profiles/test_obj1
+05a3:9230,undistort/profiles/extreme_distort_img,undistort/profiles/extreme_distort_obj
+not used:
 046d:0837,undistort/profiles/img1,undistort/profiles/obj1
 046d:0837,undistort/profiles/default_img,undistort/profiles/default_obj
+invalid:
+05a3:9230,fakepath1,fakepath2
+test,undistort/profiles/test_img1,undistort/profiles/test_obj1
+test2,fakepath1,fakepath2
+dup:
+05a3:9230,undistort/profiles/default_img,undistort/profiles/default_obj
+05a3:9230,undistort/profiles/original5_img,undistort/profiles/original5_obj
+05a3:9230,undistort/profiles/tmp_img,undistort/profiles/tmp_obj
