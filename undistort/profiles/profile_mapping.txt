@@ -1,0 +1,13 @@
+05a3:9230,undistort/profiles/test_img1,undistort/profiles/test_obj1
+test,undistort/profiles/test_img1,undistort/profiles/test_obj1
+test,undistort/profiles/img1,undistort/profiles/obj1
+05a3:9230,undistort/profiles/img1,undistort/profiles/obj1
+lllll
+test2,fakepath1,fakepath2
+05a3:9230,fakepath1,fakepath2
+05a3:9230,undistort/profiles/default_img,undistort/profiles/default_obj
+05a3:9230,fakepath1,fakepath2,m
+05a3:9230,fakepath1,fakepath2
+,undistort/profiles/test_img1,undistort/profiles/test_obj1
+046d:0837,undistort/profiles/img1,undistort/profiles/obj1
+046d:0837,undistort/profiles/default_img,undistort/profiles/default_obj
