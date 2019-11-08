@@ -108,3 +108,4 @@ def test_getScore2():
     f1 = getScore(outputPts, expectedPts, width, height)
 
 test_getScore1()
+test_getScore2()

@@ -22,8 +22,8 @@ default_obj_points_path = profiles_folder + "/default_obj"
 # For selecting profile: each line as <idVendor>:<idProduct>,<img_points_path>,<obj_points_path>
 device_profile_mapping_file = profiles_folder + "/profile_mapping.txt"
 DELIMITER = ","
-default_profile_symbol = "D"
-none_profile_symbol = "N"
+default_profile_symbol = "d"
+none_profile_symbol = "n"
 
 
 # to_calibrate_path = 'data/distorted/'
@@ -52,7 +52,7 @@ class Undistortion:
         self.device_name = None
 
         # debug
-        self.show_image = True
+        self.show_image = False
         self.save_image = False
         self.both_way = False
         self.crop = True
@@ -256,11 +256,11 @@ class Undistortion:
                         return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix
 
                     # Enable default profiling
-                    if str(user_selected) == default_profile_symbol:
+                    if str(user_selected).lower() == default_profile_symbol:
                         break
 
                     #  Enable skipping undistortion
-                    elif str(user_selected) == none_profile_symbol:
+                    elif str(user_selected).lower() == none_profile_symbol:
                         self.skip_undistort = True
                         print("Skipping undistortion!")
                         break

@@ -26,11 +26,11 @@ if __name__== "__main__":
         print (video_path)
         print (label_path)
         print (log_path)
-        if os.path.exists("extractPoints.log"):
-            os.remove('extractPoints.log')
+        if os.path.exists("extract_points.log"):
+            os.remove('extract_points.log')
         cam_device = cv2.VideoCapture(video_path)
         main.process_video(cam_device, None)
-        shutil.copyfile('extractPoints.log', log_path)
+        shutil.copyfile('extract_points.log', log_path)
         width = cam_device.get(cv2.CAP_PROP_FRAME_WIDTH)  # float
         height = cam_device.get(cv2.CAP_PROP_FRAME_HEIGHT)  # float
         del (cam_device)
@@ -45,6 +45,7 @@ if __name__== "__main__":
         print(target_points)
 
 
+        print("log_path", log_path)
         with open(log_path, "r") as log_file:
             cnt = 0
             diff_total = 0
@@ -59,7 +60,7 @@ if __name__== "__main__":
                     diff += math.sqrt((float(p[0]) - target_points[idx][0]) ** 2 + (float(p[1]) - target_points[idx][1])**2)
 
                 diff_total += diff / 4
-                # print ("cnt", cnt, "total diff", diff_total)
+            print ("cnt", cnt   )
             diff_percentage = round(100 * diff_total / cnt / math.sqrt(width ** 2 + height ** 2), 2)
             print ("cnt", cnt, "width", width, "height", height, "diff", round(diff_total/cnt,2),
                    "(", diff_percentage , "%)")

@@ -18,7 +18,6 @@ class Extractor:
         self.area = self.width * self.height
         self.logfile = None
         if params['benchmark']:
-
             self.logfile = open("extract_points.log", "w")
 
     def __call__(self, src, frame_num):

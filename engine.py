@@ -29,7 +29,9 @@ class Engine:
             'center': (300, 100, 40, 40),
             'benchmark': BENCHMARK
         })
-        self.undistorter = undistortion.Undistortion(cam_device_number=int(self.cam_device_number))
+        self.undistorter = undistortion.Undistortion(
+            cam_device_number=self.cam_device_number
+        )
         self.beautifier = beautifier.Beautifier({
 
         })
@@ -57,19 +59,19 @@ class Engine:
         # src = np.average(np.array(run), axis=0).astype(np.uint8)
         return src, run_sum
 
-    # vanilla           28.2 fps
-    # avg1              24.5 fps
-    # avg2              22   fps
-    # undistorter        5.5 fps
-    # extractor          6.5 fps   1 freq
-    # extractor         22   fps  10 freq
-    # beautifier         9   fps
-    # whole            3.3   fps
+        # vanilla           28.2 fps
+        # avg1              24.5 fps
+        # avg2              22   fps
+        # undistorter        5.5 fps
+        # extractor          6.5 fps   1 freq
+        # extractor         22   fps  10 freq
+        # beautifier         9   fps
+        # whole            3.3   fps
 
-    # no u               6.8 fps
-    # no b               3.8 fps
-    # no u/b avg2       17   fps
-    # no u/b avg1       19.5 fps
+        # no u               6.8 fps
+        # no b               3.8 fps
+        # no u/b avg2       17   fps
+        # no u/b avg1       19.5 fps
     def time(self):
         start_time = self.start_time
         end_time = time.time()
@@ -89,19 +91,23 @@ class Engine:
         
         src = self.undistorter(src).copy(order='C')        
         # cv2.imshow('undistorter', src)
-        # cv2.waitKey(200)
         # cv2.imwrite('tmp/' + str(self.frame_num) + '_original.jpg', src)
+
+        src = self.extractor(src, self.frame_num)
+        # cv2.imshow('extractor', src)
 
         src = self.beautifier(src)
         # cv2.imshow('beautifier', src)
 
-        src, self.run_post_sum = self.average(src, self.run_post, self.run_post_sum)
+        # src, self.run_post_sum = self.average(src, self.run_post, self.run_post_sum)
         
         self.time()
         self.frame_num += 1
 
-        show = np.hstack([orig, src])
-        cv2.imshow('Video', show)
+        # cv2.imshow('b', src)
+
+        # show = np.hstack([orig, src])
+        # cv2.imshow('Video', show)
         return src
 
 ####################

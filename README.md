@@ -28,7 +28,7 @@ cameras/size = 2
 cameras/1/type = output
 cameras/1/mode = mmap, userptr, rw
 cameras/1/description = Virtual Camera (output device)
-cameras/1/formats = 2
+cameras/1/formats = 2, 4
 
 cameras/2/type = capture
 cameras/2/mode = mmap, rw
@@ -52,6 +52,11 @@ formats/3/format = RGB24, BGR24
 formats/3/width = 1920
 formats/3/height = 1080
 formats/3/fps = 60
+
+formats/4/format = RGB24, BGR24
+formats/4/width = 1920
+formats/4/height = 1080
+formats/4/fps = 30
 
 [Connections]
 connections/size = 1

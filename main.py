@@ -62,8 +62,8 @@ def configure_cap_device(device):
     fcntl.ioctl(device, v4l2.VIDIOC_S_FMT, format)
 
 
-def process_video(cam_device, cap_device, cam_device_number):
-    eng = engine.Engine(WIDTH, HEIGHT, cam_device_number)
+def process_video(cam_device, cap_device):
+    eng = engine.Engine(WIDTH, HEIGHT, CAM_DEVICE_NUMBER)
 
     while True:
         try:
@@ -88,6 +88,9 @@ def process_video(cam_device, cap_device, cam_device_number):
             break
 
 def parse_args(args):
+    cap_device_number = str(CAP_DEVICE_NUMBER)
+    cam_device_number = str(CAM_DEVICE_NUMBER)
+
     if len(args) >= 2:
         cap_device_number = args[1]
     if cap_device_number.isdigit():
@@ -108,7 +111,7 @@ if __name__== "__main__":
     cap_device = get_cap_device(CAP_DEVICE_NUMBER)
     cam_device = cv2.VideoCapture(CAM_DEVICE_NUMBER)
     
-    process_video(cam_device, cap_device, CAM_DEVICE_NUMBER)
+    process_video(cam_device, cap_device)
     
     del(cam_device)
     cap_device.close()
