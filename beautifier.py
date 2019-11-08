@@ -12,7 +12,8 @@ class Beautifier:
         return self.beautify_whiteboard(src)
 
     def beautify_whiteboard(self, orig):
-        src = orig.copy()
+        # src = orig.copy()
+        src = orig
 
         # Apply CLAHE for histogram equilization
         src_lab = cv2.cvtColor(src, cv2.COLOR_BGR2LAB)
@@ -26,7 +27,7 @@ class Beautifier:
         # Apply smoothening preserving edge
         src = src_clahe
         src_filter = cv2.edgePreservingFilter(src, flags=cv2.RECURS_FILTER, sigma_s=60, sigma_r=0.4)
-        cv2.imshow('Filter', src_filter)
+        # cv2.imshow('Filter', src_filter)
 
         # TODO: Sharp?
         # Apply sharpening filter
@@ -35,7 +36,7 @@ class Beautifier:
                            [-1, 9,-1],
                            [-1,-1,-1]])
         src_sharp = cv2.filter2D(src, -1, kernel)
-        cv2.imshow('Sharp', src_sharp)
+        # cv2.imshow('Sharp', src_sharp)
 
         # TODO: Gray or Colored?
         # Convert the color from BGR to Gray
@@ -50,5 +51,6 @@ class Beautifier:
         #         cv2.THRESH_BINARY, 11, 3)
         # cv2.imshow('Thresh', src_thresh)
         
-        src = src_filter
+        # src = src_filter
+        src = src_sharp
         return src

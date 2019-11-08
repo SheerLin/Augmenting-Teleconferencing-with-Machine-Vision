@@ -244,22 +244,22 @@ class Undistortion:
         new_camera_mtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
         # print("new_camera_mtx", new_camera_mtx)  # no change
 
-        cv2.namedWindow("before undistortion", self.imshow_size)
-        cv2.imshow("before undistortion", image)
+        # cv2.namedWindow("before undistortion", self.imshow_size)
+        # cv2.imshow("before undistortion", image)
 
         dst = cv2.undistort(image, mtx, dist, None, new_camera_mtx)
         # mapx, mapy = cv2.initUndistortRectifyMap(mtx, dist, None, new_camera_mtx, (w, h), 5)
         # dst = cv2.remap(image, mapx, mapy, cv2.INTER_LINEAR)
 
-        cv2.namedWindow("after undistortion", self.imshow_size)
-        cv2.imshow("after undistortion", dst)
+        # cv2.namedWindow("after undistortion", self.imshow_size)
+        # cv2.imshow("after undistortion", dst)
 
         if self.crop:
             # crop the image
             x, y, w, h = roi
             dst = dst[y:y + h, x:x + w]
-            cv2.namedWindow("crop", self.imshow_size)
-            cv2.imshow("crop", dst)
+            # cv2.namedWindow("crop", self.imshow_size)
+            # cv2.imshow("crop", dst)
 
         # cv2.waitKey(10000)
         # print("haha")
