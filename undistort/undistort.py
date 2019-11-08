@@ -6,6 +6,7 @@ import time
 import json
 import numpy as np
 import codecs
+import undistortion
 
 
 def undistort_square(src):
@@ -193,3 +194,45 @@ print("Undistort", len(distorted_images), " pictures:", elapsed_time)
 # print("total error: " + str(mean_error / len(objpoints)))
 
 cv2.destroyAllWindows()
+
+
+
+
+def test_undistort():
+    # original_chessboard_path = 'undistort/data/chessboard/original/*'
+    profile_path = "undistort/profiles/test2.txt"
+    img_path = "undistort/data/distorted/original3/q7_1.png"
+
+    img_points_path_no_post_fix = "undistort/profiles/img1"
+    img_points_path_with_post_fix = "undistort/profiles/img1" + undistortion.npy_file_postfix
+    obj_points_path_no_post_fix = "undistort/profiles/obj1"
+    obj_points_path_with_post_fix = "undistort/profiles/obj1" + undistortion.npy_file_postfix
+
+    # Test 1. Use chessboard folder
+    # undistort_instance = undistortion.Undistortion(chessboard_folder_path=undistortion.default_chessboard_path2)
+    #
+    # original_img_points, original_obj_points = undistortion.Undistortion.serialize(undistort_instance.img_points,
+    #                                                                                undistort_instance.obj_points,
+    #                                                                                img_points_path_no_post_fix,
+    #                                                                                obj_points_path_no_post_fix)
+    # new_img_points, new_obj_points = \
+    #     undistortion.Undistortion.deserialize(img_points_path_with_post_fix, obj_points_path_with_post_fix)
+    #
+    # undistortion.Undistortion.check_np_array_equals(original_img_points, new_img_points)
+    # undistortion.Undistortion.check_np_array_equals(original_obj_points, new_obj_points)
+
+    # Test 2. Use profile
+    undistort_instance = undistortion.Undistortion(chessboard_folder_path=None,
+                                                   img_points_path=img_points_path_with_post_fix,
+                                                   obj_points_path=obj_points_path_with_post_fix)
+
+    #################################
+    # Test single image calibration
+    #################################
+    img = cv2.imread(img_path)
+    new_img = undistort_instance(img)
+
+    # cv2.resizeWindow('image', 600,600)
+    cv2.waitKey(10000)
+
+    cv2.destroyAllWindows()
