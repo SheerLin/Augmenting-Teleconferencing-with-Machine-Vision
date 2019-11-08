@@ -13,9 +13,10 @@ BENCHMARK = True
 
 class Engine:
 
-    def __init__(self, width, height):
+    def __init__(self, width, height, cam_device_number):
         self.width = width
         self.height = height
+        self.cam_device_number = cam_device_number
         self.frame_num = 0
         self.start_time = 0
         self.end_time = 0
@@ -28,7 +29,7 @@ class Engine:
             'center': (300, 100, 40, 40),
             'benchmark': BENCHMARK
         })
-        self.undistorter = undistortion.Undistortion()
+        self.undistorter = undistortion.Undistortion(cam_device_number=int(self.cam_device_number))
         self.beautifier = beautifier.Beautifier({
 
         })
