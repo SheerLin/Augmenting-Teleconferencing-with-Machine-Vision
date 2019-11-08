@@ -5,12 +5,12 @@ from polygon import Polygon
 from convex_intersect import convexIntersect
 
 def get_intersection(poly1, poly2):
-    print (poly2.convex())
-    print (poly2.simple())
-    print (poly1.intersect(poly2))
+    # print (poly2.convex())
+    # print (poly2.simple())
+    # print (poly1.intersect(poly2))
 
     intersect = convexIntersect(poly1, poly2)
-    print (intersect)
+    # print (intersect)
 
     x, y = np.array(intersect.getContourPoints()).T
     x1, y1 = np.array(poly1.getContourPoints()).T
@@ -25,20 +25,22 @@ def get_intersection(poly1, poly2):
     return intersect
 
 def getScore(outputPts, expectedPts, width, height):
+    print ('output points:', outputPts)
+    print ('expected points:', expectedPts)
     wholeArea = width * height
     outputPoly = Polygon(outputPts)
     expectedPoly = Polygon(expectedPts)
     intersectPoly = get_intersection(outputPoly, expectedPoly)
-    print("whole area", wholeArea)
-    print("polexpectedPoly area", outputPoly.getArea())
-    print("expectedPoly area", expectedPoly.getArea())
-    print("intersectPoly area", intersectPoly.getArea())
+    #print("whole area", wholeArea)
+    #print("polexpectedPoly area", outputPoly.getArea())
+    #print("expectedPoly area", expectedPoly.getArea())
+    #print("intersectPoly area", intersectPoly.getArea())
     precision = intersectPoly.getArea() / outputPoly.getArea() # True positive / (True Positive + false positive)
     recall =  intersectPoly.getArea()  / expectedPoly.getArea() # True positive / (True Positive + false negative)
     f1 = 2 * precision * recall / (precision + recall)
     print ("precision: ", precision * 100, "%")
     print ("recall: ", recall * 100, "%")
-    print("f1: ", f1)
+    print("f1 score: ", f1)
     return f1
 
 
@@ -105,4 +107,4 @@ def test_getScore2():
     height = 720
     f1 = getScore(outputPts, expectedPts, width, height)
 
-# test_getScore2()
+test_getScore1()
