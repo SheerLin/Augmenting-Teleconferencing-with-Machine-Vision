@@ -1,8 +1,13 @@
+#!/usr/bin/python3
+
 import cv2
 import glob
 import os
 import time
 import numpy as np
+import subprocess
+import shutil
+import sys
 
 profiles_folder = "undistort/profiles"
 npy_file_postfix = ".npy"
@@ -11,11 +16,12 @@ default_chessboard_path = "undistort/data/chessboard/original/*"
 default_chessboard_path2 = "undistort/data/chessboard/original4/*"
 
 # Set default_img_points_path and default_obj_points_path
-default_img_points_path = profiles_folder + "/img1" + npy_file_postfix
-default_obj_points_path = profiles_folder + "/obj1" + npy_file_postfix
+default_img_points_path = profiles_folder + "/default_img"
+default_obj_points_path = profiles_folder + "/default_obj"
 
-# For selecting profile
-para_2_profile_file_path = profiles_folder + "/profile_mapping"
+# For selecting profile: each line as <idVendor>:<idProduct>,<img_points_path>,<obj_points_path>
+device_profile_mapping_file = profiles_folder + "/profile_mapping.txt"
+DELIMITER = ","
 
 
 # to_calibrate_path = 'data/distorted/'
@@ -29,6 +35,7 @@ para_2_profile_file_path = profiles_folder + "/profile_mapping"
 
 class Undistortion:
     def __init__(self, chessboard_folder_path=None, img_points_path=None, obj_points_path=None):
+        # TODO - Refactor the format of parameters
         self.img_points_path = img_points_path
         self.obj_points_path = obj_points_path
         self.chessboard_folder_path = chessboard_folder_path
@@ -141,17 +148,24 @@ class Undistortion:
 
     def __init_profile_mapping(self):
         """Reading from mapping profile to initialize self.device_to_profile"""
-        if para_2_profile_file_path and os.path.isfile(para_2_profile_file_path):
-            # TODO - read from para_2_profile_file_path to construct self.device_to_profile
+        if device_profile_mapping_file and os.path.isfile(device_profile_mapping_file):
+            # TODO - read from device_profile_mapping_file to construct self.device_to_profile
             print(self.device_to_profile)
             pass
         else:
             return False
 
     def __select_profile(self):
-        """1. Find current usb devices and check if it matches with the existing mapping
-        2. Find the corresponding profile according to devices, if multiple available devices found
-        Let user select with device(profile) to be used"""
+        """
+        Function:
+            1. Find current usb devices and check if it matches with the existing mapping
+            2. Find the corresponding profile according to devices, if multiple available devices found
+            Let user select with device(profile) to be used
+
+        Returns:
+            Path to img points npy file (with post fix)
+            Path to obj points npy file (with post fix)
+        """
 
         if len(self.device_to_profile.keys()) > 0:
             # 1. Find out list of devices
@@ -159,32 +173,64 @@ class Undistortion:
             # TODO - 2.Find the corresponding profile according to parameters"
             pass
 
-        elif default_img_points_path and os.path.isfile(default_img_points_path and default_obj_points_path) \
-                and os.path.exists(default_obj_points_path):
-            return default_img_points_path, default_obj_points_path
+        elif default_img_points_path \
+                and os.path.isfile(default_img_points_path + npy_file_postfix) \
+                and default_obj_points_path \
+                and os.path.exists(default_obj_points_path + npy_file_postfix):
+            return default_img_points_path + npy_file_postfix, default_obj_points_path + npy_file_postfix
 
         else:
             return False
 
     @staticmethod
     def get_usb_devices():
-        # TODO - Get the list of usb devices
-        usb_devices = list()
+        """Get the list of <idVendor>:<idProduct> from cmd lsusb"""
+        cmd = "lsusb | awk '{print $6 }'"
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        output = p.communicate()[0].decode("utf-8")
+        usb_devices = str(output).splitlines()
         return usb_devices
 
     @staticmethod
     def chessboard_path_to_profile(chessboard_path, img_points_path, obj_points_path, devices: list):
         """1. Save the points from chessboard path pictures to img_points_path, obj_points_path
-        2. Take devices list and add the mapping to para_2_profile_file_path"""
+        2. Take devices list and add the mapping to device_profile_mapping_file"""
         img_points, obj_points = Undistortion.init_img_obj_points_from_chessboards(chessboard_path)
         Undistortion.serialize(img_points, obj_points, img_points_path, obj_points_path)
 
         if devices and len(devices) > 0:
-            Undistortion.define_para_to_profile(devices, img_points_path, obj_points_path)
+            Undistortion.save_device_to_profile(devices, img_points_path, obj_points_path)
 
     @staticmethod
-    def define_para_to_profile(devices: list, img_points_path, obj_points_path):
-        """TODO - Write to para_2_profile_file_path file"""
+    def save_device_to_profile(devices: list, img_points_path, obj_points_path):
+        """Write to device_profile_mapping_file file"""
+
+        print("In define_para_to_profile:")
+        print("devices:", devices)
+        print("img_points_path:", img_points_path)
+        print("obj_points_path:", obj_points_path)
+        print("device_profile_mapping_file:", device_profile_mapping_file)
+
+        if device_profile_mapping_file:
+            # 1. Set the open mode
+            mode = 'a+'
+            if not os.path.exists(device_profile_mapping_file):
+                mode = 'w+'
+            elif not os.path.isfile(device_profile_mapping_file):
+                shutil.rmtree(device_profile_mapping_file)
+                mode = 'w+'
+                pass
+
+            # 2. Write to file in the format of <device>,<img_points_path>,<obj_points_path>
+            with open(device_profile_mapping_file, mode) as mapping_file:
+                for cur_device in devices:
+                    line = cur_device + DELIMITER + img_points_path + DELIMITER + obj_points_path + "\n"
+                    print(line)
+                    mapping_file.write(line)
+
+        else:
+            print("ERROR: Should define mapping file path variable 'device_profile_mapping_file' in undistortion.py")
+
         pass
 
     @staticmethod
@@ -356,7 +402,54 @@ class Undistortion:
         cv2.destroyAllWindows()
 
 
+def parse_args(args):
+    if len(args) < 5:
+        usage()
+        exit()
+
+    cur_chessboard_path = str(args[1])
+    cur_img_path = str(args[2])
+    cur_obj_path = str(args[3])
+    cur_device_list = set()
+
+    index = 0
+    for cur_arg in args:
+        if index > 3:
+            cur_device_list.add(str(args[index]))
+        index += 1
+
+    return cur_chessboard_path, cur_img_path, cur_obj_path, list(cur_device_list)
+
+
+def usage():
+    print("Usage: python3 undistortion.py <chessboard path> <img point path> "
+          "<obj point path> <device1> [<device2> ... <device n>]")
+    test_img_points_path = "undistort/profiles/img1"
+    test_obj_points_path = "undistort/profiles/obj1"
+    # TODO - delete this
+    print("python3 undistortion.py \"" + default_chessboard_path2 + "\" \"" +
+          test_img_points_path + "\" \"" + test_obj_points_path + "\" 05a3:9230 test")
+    print("   <chessboard path>: Path to the folder of chessboard pictures, e.g.\"" +
+          default_chessboard_path2 + "\"")
+    print("   <img point path> : Path to save the img points without post fix, e.g.\"" +
+          test_img_points_path + "\"")
+    print("   <obj point path> : Path to save the obj points without post fix, e.g.\"" +
+          test_obj_points_path + "\"")
+    print("   <device n>       : Device in the format of <idVendor>:<idProduct>, e.g.05a3:9230")
+
+
 if __name__ == "__main__":
-    # TODO - Main function is for build profile for a list of devices
+    # Main function is for build profile for a list of devices
     # TODO - Need to update readme upon completion of the function
-    pass
+    chessboard_path, img_path, obj_path, device_list = parse_args(sys.argv)
+    print("chessboard_path", chessboard_path)
+    print("img_path", img_path)
+    print("obj_path", obj_path)
+    print("device_list", device_list)
+
+    # Undistortion.chessboard_path_to_profile(chessboard_path, img_path, obj_path, device_list)
+    # Example:
+    # Undistortion.chessboard_path_to_profile(
+    #     default_chessboard_path2, "undistort/profiles/test_img1",
+    #     "undistort/profiles/test_obj1", ["05a3:9230", "test"]
+    # )
