@@ -35,7 +35,7 @@ DELIMITER = ","
 
 class Undistortion:
     def __init__(self, chessboard_folder_path=None, img_points_path=None, obj_points_path=None):
-        # TODO - Refactor the format of parameters
+        # TODO[low] - Refactor the format of parameters
         self.img_points_path = img_points_path
         self.obj_points_path = obj_points_path
         self.chessboard_folder_path = chessboard_folder_path
@@ -44,7 +44,7 @@ class Undistortion:
         # Arrays to store object points and image points from all the images.
         self.obj_points = []  # 3d point in real world space
         self.img_points = []  # 2d points in image plane.
-        self.device_to_profile = dict()  # Profile for selecting profile
+        self.device_to_profile = dict()  # Profile for selecting profile: <device> -> [list of (img path,obj path)]
 
         # debug
         self.show_image = True
@@ -61,14 +61,13 @@ class Undistortion:
 
     def initialize(self):
         """Initialize the needed info"""
-        print("Start initialization for undistortion")
 
         # 1. Init self.device_to_profile
         self.__init_profile_mapping()
 
-        print("self.chessboard_folder_path", self.chessboard_folder_path)
-        print("self.img_points_path", self.img_points_path)
-        print("self.obj_points_path", self.obj_points_path)
+        # print("self.chessboard_folder_path", self.chessboard_folder_path)
+        # print("self.img_points_path", self.img_points_path)
+        # print("self.obj_points_path", self.obj_points_path)
 
         # 2. Init self.obj_points and self. img_points
         # if self.chessboard_folder_path and os.path.exists(self.chessboard_folder_path):
@@ -92,7 +91,7 @@ class Undistortion:
             self.img_points, self.obj_points = Undistortion.deserialize(self.img_points_path, self.obj_points_path)
 
     @staticmethod
-    def init_img_obj_points_from_chessboards(chessboard_path):
+    def init_img_obj_points_from_chessboards(init_chessboard_path):
         """Get image points and object points from the pictures in the chessboard_path"""
         start_time = time.time()
         print("in __init_img_obj_points_from_chessboards")
@@ -104,13 +103,13 @@ class Undistortion:
         objp = np.zeros((6 * 7, 3), np.float32)
         objp[:, :2] = np.mgrid[0:7, 0:6].T.reshape(-1, 2)
 
-        images = glob.glob(chessboard_path)
+        images = glob.glob(init_chessboard_path)
         valid_pics = 0
         obj_points = []
         img_points = []
 
         if len(images) == 0:
-            print("NO pictures under chessboard path:", chessboard_path)
+            print("NO pictures under chessboard path:", init_chessboard_path)
             print("Chessboard path should be in the format of:<relative path>/*")
             exit()
 
@@ -141,19 +140,39 @@ class Undistortion:
         elapsed_time = time.time() - start_time
         cv2.destroyAllWindows()
         print("Collect 3d point from ", valid_pics, " pictures:", elapsed_time)
-        print("img_points", type(img_points), "len=", len(img_points))
-        print("obj_points", type(obj_points), "len=", len(obj_points))
+        # print("img_points", type(img_points), "len=", len(img_points))
+        # print("obj_points", type(obj_points), "len=", len(obj_points))
 
         return img_points, obj_points
 
     def __init_profile_mapping(self):
         """Reading from mapping profile to initialize self.device_to_profile"""
+
         if device_profile_mapping_file and os.path.isfile(device_profile_mapping_file):
-            # TODO - read from device_profile_mapping_file to construct self.device_to_profile
-            print(self.device_to_profile)
-            pass
-        else:
-            return False
+
+            with open(device_profile_mapping_file, 'r+') as file:
+                lines = file.readlines()
+                for line in lines:
+                    line_array = line.strip('\n').split(",")
+                    if len(line_array) != 3:
+                        # print("Skip current line due to incorrect format:", line_array)
+                        continue
+
+                    current_device = str(line_array[0])
+                    current_img_path = str(line_array[1])
+                    current_obj_path = str(line_array[2])
+
+                    if not self.device_to_profile:
+                        self.device_to_profile = dict()
+
+                    if current_device not in self.device_to_profile:
+                        self.device_to_profile[current_device] = list()
+
+                    self.device_to_profile[current_device].append((current_img_path, current_obj_path))
+
+            # print("After initialize self.device_to_profile:", self.device_to_profile)
+
+        return
 
     def __select_profile(self):
         """
@@ -167,20 +186,93 @@ class Undistortion:
             Path to obj points npy file (with post fix)
         """
 
+        # Undistortion.profile_map_formatter(self.device_to_profile, "self.device_to_profile")
         if len(self.device_to_profile.keys()) > 0:
             # 1. Find out list of devices
             list_of_devices = Undistortion.get_usb_devices()
-            # TODO - 2.Find the corresponding profile according to parameters"
-            pass
 
-        elif default_img_points_path \
+            # 2. Iterate through the list and find if the current device has profile
+            # print(list_of_devices)
+            available_profiles_map = dict()
+            for current_device in list_of_devices:
+                if current_device in self.device_to_profile:
+                    if current_device not in available_profiles_map:
+                        available_profiles_map[current_device] = set()
+
+                    for profile_pair in self.device_to_profile[current_device]:
+                        tmp_img_path = str(profile_pair[0])
+                        tmp_obj_path = str(profile_pair[1])
+                        if tmp_img_path and os.path.exists(tmp_img_path + npy_file_postfix) \
+                                and tmp_obj_path and os.path.exists(tmp_obj_path + npy_file_postfix):
+                            available_profiles_map[current_device].add(profile_pair)
+
+            # Undistortion.profile_map_format_print(available_profiles_map, "available_profiles_map")
+
+            # 3. If there is no  available profile pairs, pass
+            if len(available_profiles_map) == 0:
+                print("Skip select profile: No available device in profile mapping")
+                pass
+
+            # 4. If there is only one available profile pair, return it
+            no_profile = False
+            if len(available_profiles_map) == 1:
+
+                for the_only_device, the_pairs in available_profiles_map.items():
+                    if len(the_pairs) == 0:
+                        print("Skip select profile: No available profile path found for device", the_only_device)
+                        no_profile = True
+                        break
+                    elif len(the_pairs) == 1:
+                        print("Single profile pair found!!")
+                        selected_img_path = str(list(the_pairs)[0][0])
+                        selected_obj_path = str(list(the_pairs)[0][1])
+                        return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix
+
+            # 5. If there are multiple available profile pairs, let user select
+            if not no_profile:
+                id_to_profile = Undistortion.profile_map_formatter(available_profiles_map, "available_profiles_map")
+                while True:
+                    user_selected = input()
+                    if user_selected and len(user_selected) > 0 and str(user_selected).isdigit() \
+                            and int(user_selected) in id_to_profile:
+                        print("Valid Input:", int(user_selected), id_to_profile[int(user_selected)])
+                        selected_img_path = str(id_to_profile[int(user_selected)][0])
+                        selected_obj_path = str(id_to_profile[int(user_selected)][1])
+                        return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix
+                    print("Invalid input:", user_selected)
+
+        if default_img_points_path \
                 and os.path.isfile(default_img_points_path + npy_file_postfix) \
                 and default_obj_points_path \
                 and os.path.exists(default_obj_points_path + npy_file_postfix):
             return default_img_points_path + npy_file_postfix, default_obj_points_path + npy_file_postfix
 
         else:
-            return False
+            return False, False
+
+    @staticmethod
+    def profile_map_formatter(profile_map: dict, name: str):
+        """
+        Function:
+            Give each profile pair a unique id and print them in user readable format
+
+        Returns:
+            A dictionary: id -> (img path, obj path)
+        """
+        counter = 0
+        padding = "    "
+        id_to_profile_pair = dict()
+        # print(name, ":")
+        print("Please select a profile by entering the #:")
+        for cur_device, cur_pair_list_or_set in profile_map.items():
+            cur_pair_list = list(cur_pair_list_or_set)
+            print(padding + Undistortion.get_usb_device(device_id=cur_device))
+            for cur_pair in cur_pair_list:
+                print(padding + padding, counter, "=", cur_pair)
+                id_to_profile_pair[counter] = cur_pair
+                counter += 1
+
+        return id_to_profile_pair
 
     @staticmethod
     def get_usb_devices():
@@ -192,10 +284,22 @@ class Undistortion:
         return usb_devices
 
     @staticmethod
-    def chessboard_path_to_profile(chessboard_path, img_points_path, obj_points_path, devices: list):
+    def get_usb_device(device_id):
+        """Get the (first) line in lsusb for device with device_id"""
+        cmd = "lsusb | grep " + str(device_id)
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        output = p.communicate()[0].decode("utf-8")
+        usb_devices = str(output).splitlines()
+        if not usb_devices or len(usb_devices) == 0:
+            return []
+        else:
+            return usb_devices[0]
+
+    @staticmethod
+    def chessboard_path_to_profile(set_up_chessboard_path, img_points_path, obj_points_path, devices: list):
         """1. Save the points from chessboard path pictures to img_points_path, obj_points_path
         2. Take devices list and add the mapping to device_profile_mapping_file"""
-        img_points, obj_points = Undistortion.init_img_obj_points_from_chessboards(chessboard_path)
+        img_points, obj_points = Undistortion.init_img_obj_points_from_chessboards(set_up_chessboard_path)
         Undistortion.serialize(img_points, obj_points, img_points_path, obj_points_path)
 
         if devices and len(devices) > 0:
@@ -247,17 +351,17 @@ class Undistortion:
         return img_points, obj_points
 
     @staticmethod
-    def deserialize(img_path, obj_path):
-        if not img_path or not os.path.exists(img_path):
-            print("img_path(", img_path + "):File not exist")
-            return
+    def deserialize(de_img_path, de_obj_path):
+        if not de_img_path or not os.path.exists(de_img_path):
+            print("img_path(", de_img_path + "):File not exist")
+            return None, None
 
-        if not obj_path or not os.path.exists(obj_path):
-            print("obj_path(", obj_path + "):File not exist")
-            return
+        if not de_obj_path or not os.path.exists(de_obj_path):
+            print("obj_path(", de_obj_path + "):File not exist")
+            return None, None
 
-        img_points = np.load(img_path)
-        obj_points = np.load(obj_path)
+        img_points = np.load(de_img_path)
+        obj_points = np.load(de_obj_path)
 
         return img_points, obj_points
 
@@ -314,7 +418,7 @@ class Undistortion:
     def calibrate_images(self, to_calibrate_path):
         """Calibrate all pictures under to_calibrate_path"""
         start_time = time.time()
-        # TODO - How to defind gray
+        # TODO[low] - How to defind gray
         ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(self.obj_points, self.img_points,
                                                            gray.shape[::-1], None, None)
 
@@ -407,13 +511,20 @@ def parse_args(args):
         usage()
         exit()
 
+    # Check chessboard path
     cur_chessboard_path = str(args[1])
+    images = glob.glob(cur_chessboard_path)
+    if len(images) == 0:
+        print("NO pictures under chessboard path:", cur_chessboard_path)
+        print("Chessboard path should be in the format of:<relative path>/*")
+        exit()
+
     cur_img_path = str(args[2])
     cur_obj_path = str(args[3])
     cur_device_list = set()
 
     index = 0
-    for cur_arg in args:
+    while index < len(args):
         if index > 3:
             cur_device_list.add(str(args[index]))
         index += 1
@@ -426,9 +537,6 @@ def usage():
           "<obj point path> <device1> [<device2> ... <device n>]")
     test_img_points_path = "undistort/profiles/img1"
     test_obj_points_path = "undistort/profiles/obj1"
-    # TODO - delete this
-    print("python3 undistortion.py \"" + default_chessboard_path2 + "\" \"" +
-          test_img_points_path + "\" \"" + test_obj_points_path + "\" 05a3:9230 test")
     print("   <chessboard path>: Path to the folder of chessboard pictures, e.g.\"" +
           default_chessboard_path2 + "\"")
     print("   <img point path> : Path to save the img points without post fix, e.g.\"" +
@@ -440,14 +548,13 @@ def usage():
 
 if __name__ == "__main__":
     # Main function is for build profile for a list of devices
-    # TODO - Need to update readme upon completion of the function
     chessboard_path, img_path, obj_path, device_list = parse_args(sys.argv)
-    print("chessboard_path", chessboard_path)
-    print("img_path", img_path)
-    print("obj_path", obj_path)
-    print("device_list", device_list)
+    # print("chessboard_path", chessboard_path)
+    # print("img_path", img_path)
+    # print("obj_path", obj_path)
+    # print("device_list", device_list)
+    Undistortion.chessboard_path_to_profile(chessboard_path, img_path, obj_path, device_list)
 
-    # Undistortion.chessboard_path_to_profile(chessboard_path, img_path, obj_path, device_list)
     # Example:
     # Undistortion.chessboard_path_to_profile(
     #     default_chessboard_path2, "undistort/profiles/test_img1",
