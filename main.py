@@ -20,23 +20,31 @@ import engine
 # video8 is the usb cam
 # video9 is the usb cam
 
-CAP_DEVICE_NUMBER = 0
-CAM_DEVICE_NUMBER = 6
+CAM_DEVICE_NUMBER = 2 # input device
+CAP_DEVICE_NUMBER = 0 # output device
+HEIGHT, WIDTH = (480, 640) # frame size
 
-# frame size
-# WIDTH, HEIGHT = (1920, 1080)
-WIDTH, HEIGHT = (640, 480)
+def get_cam_device(dev_number):
+    try:
+        device = cv2.VideoCapture(dev_number)
+        ret, im = device.read()
+        if not ret:
+            print("Can't read from device", dev_number)
+            exit()
+    except Exception as e:
+        print("Warning: can't read from", dev_number)
+        print(e)
+        exit()
+    return device, im.shape[0], im.shape[1]
 
 def get_cap_device(dev_number):
     dev_name = '/dev/video' + str(dev_number)
     print("Capture Device: ", dev_name)
-    if not os.path.exists(dev_name):
-        print("Warning: device does not exist", dev_name)
-        exit()
     try:
         device = open(dev_name, 'wb')
-    except Exception:
-        print("Exception in opening device")
+    except Exception as e:
+        print("Exception in opening device", dev_name)
+        print(e)
         exit()
     configure_cap_device(device) 
     return device
@@ -88,28 +96,22 @@ def process_video(cam_device, cap_device):
             break
 
 def parse_args(args):
-    cap_device_number = str(CAP_DEVICE_NUMBER)
-    cam_device_number = str(CAM_DEVICE_NUMBER)
-
+    cam_device_number = CAM_DEVICE_NUMBER
+    cap_device_number = CAP_DEVICE_NUMBER
     if len(args) >= 2:
-        cap_device_number = args[1]
-    if cap_device_number.isdigit():
-        cap_device_number = int(cap_device_number)
-    
+        cam_device_number = int(args[1])
     if len(args) >= 3:
-        cam_device_number = args[2]
-    if cam_device_number.isdigit():
-        cam_device_number = int(cam_device_number)
-    
-    return cap_device_number, cam_device_number
+        cap_device_number = int(args[2])
+    return cam_device_number, cap_device_number
+
 
 if __name__== "__main__":
-    CAP_DEVICE_NUMBER, CAM_DEVICE_NUMBER = parse_args(sys.argv)
-    print("CAP_DEVICE_NUMBER", CAP_DEVICE_NUMBER)
+    CAM_DEVICE_NUMBER, CAP_DEVICE_NUMBER = parse_args(sys.argv)
     print("CAM_DEVICE_NUMBER", CAM_DEVICE_NUMBER)
+    print("CAP_DEVICE_NUMBER", CAP_DEVICE_NUMBER)
     
+    cam_device, HEIGHT, WIDTH = get_cam_device(CAM_DEVICE_NUMBER)
     cap_device = get_cap_device(CAP_DEVICE_NUMBER)
-    cam_device = cv2.VideoCapture(CAM_DEVICE_NUMBER)
     
     process_video(cam_device, cap_device)
     

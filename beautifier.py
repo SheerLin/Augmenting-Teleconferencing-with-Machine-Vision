@@ -22,12 +22,12 @@ class Beautifier:
         cl = clahe.apply(l)
         src_clab = cv2.merge((cl,a,b))
         src_clahe = cv2.cvtColor(src_clab, cv2.COLOR_LAB2BGR)
-        cv2.imshow('Clahe', src_clahe)
+        # cv2.imshow('Clahe', src_clahe)
 
         # Apply smoothening preserving edge
         src = src_clahe
         src_filter = cv2.edgePreservingFilter(src, flags=cv2.RECURS_FILTER, sigma_s=60, sigma_r=0.4)
-        cv2.imshow('Filter', src_filter)
+        # cv2.imshow('Filter', src_filter)
 
         # TODO: Sharp?
         # Apply sharpening filter
@@ -36,14 +36,13 @@ class Beautifier:
                            [-1, 9,-1],
                            [-1,-1,-1]])
         src_sharp = cv2.filter2D(src, -1, kernel)
-        cv2.imshow('Sharp', src_sharp)
+        # cv2.imshow('Sharp', src_sharp)
 
         # TODO: Gray or Colored?
         # Convert the color from BGR to Gray
         # src = src_clahe
         # src_gray = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
-
-        
+  
         # TODO: Threshold?
         # Apply mean adaptive theshold
         # src = src_gray

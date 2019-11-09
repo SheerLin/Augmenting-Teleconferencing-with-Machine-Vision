@@ -88,26 +88,22 @@ class Engine:
         # cv2.imshow('orig', src)
         
         src, self.run_pre_sum = self.average(src, self.run_pre, self.run_pre_sum)
-        
+
         src = self.undistorter(src).copy(order='C')        
         # cv2.imshow('undistorter', src)
-        # cv2.imwrite('tmp/' + str(self.frame_num) + '_original.jpg', src)
-
+        
         src = self.extractor(src, self.frame_num)
         # cv2.imshow('extractor', src)
 
         src = self.beautifier(src)
-        # cv2.imshow('beautifier', src)
 
         # src, self.run_post_sum = self.average(src, self.run_post, self.run_post_sum)
         
         self.time()
         self.frame_num += 1
 
-        # cv2.imshow('b', src)
-
-        # show = np.hstack([orig, src])
-        # cv2.imshow('Video', show)
+        show = np.hstack([orig, src])
+        cv2.imshow('Video', show)
         return src
 
 ####################
