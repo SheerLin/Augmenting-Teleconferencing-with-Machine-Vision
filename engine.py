@@ -102,8 +102,11 @@ class Engine:
         self.time()
         self.frame_num += 1
 
-        show = np.hstack([orig, src])
-        cv2.imshow('Video', show)
+        # show = np.hstack([orig, src])
+        # cv2.imshow('Video', show)
+
+        cv2.imshow('Orig', orig)
+        # cv2.imshow('Out', src)
         return src
 
 ####################

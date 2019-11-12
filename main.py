@@ -9,48 +9,118 @@ import v4l2
 
 import engine
 
-# video0 is the virtual camera capture device
-# video1 is the virtual camera output device
-# video2 is the integrated web cam
-# video3 is the integrated web cam
-# video4 is the integrated web cam
-# video5 is the integrated web cam
-# video6 is the usb cam
-# video7 is the usb cam
-# video8 is the usb cam
-# video9 is the usb cam
-
 CAM_DEVICE_NUMBER = 2 # input device
 CAP_DEVICE_NUMBER = 0 # output device
-HEIGHT, WIDTH = (480, 640) # frame size
+RESOLUTION = 1080
 
-def get_cam_device(dev_number):
+
+'''
+@brief Parses command line arguments.
+
+@param args Command line arguments
+@return cam_device_number, cap_device_number, resolution
+'''
+def parse_args(args):
+    cam_device_number = CAM_DEVICE_NUMBER
+    cap_device_number = CAP_DEVICE_NUMBER
+    resolution = RESOLUTION
+    if len(args) >= 2:
+        cam_device_number = int(args[1])
+    if len(args) >= 3:
+        cap_device_number = int(args[2])
+    if len(args) >= 4:
+        resolution = int(args[3])
+    return cam_device_number, cap_device_number, resolution
+
+'''
+@brief Returns width-height based on the resolution.
+@return width, height
+'''
+def get_resolution(res):
+    if res == 1080:
+        width, height = 1920, 1080
+    if res == 720:
+        width, height = 1280, 720
+    if res == 600:
+        width, height = 800, 600
+    else:
+        width, height = 640, 480
+    return width, height
+
+'''
+@brief Obtains a video input device, and configures it for the given
+       width-height. Reads first frame from the device to get the
+       correct width-height.
+       
+@param dev_number Number of device to open
+@param width Desired width
+@param height Desired height
+@return device, width, height
+'''
+def get_cam_device(dev_number, width, height):
     try:
         device = cv2.VideoCapture(dev_number)
+        configure_cam_device(device, width, height)
         ret, im = device.read()
         if not ret:
             print("Can't read from device", dev_number)
             exit()
     except Exception as e:
-        print("Warning: can't read from", dev_number)
+        print("Exception in opening device", dev_number)
         print(e)
         exit()
-    return device, im.shape[0], im.shape[1]
+    height = im.shape[0]
+    width = im.shape[1]
+    print("Cam Device: ", dev_number)
+    print("Width: {}, Height: {}".format(width, height))
+    return device, width, height
 
-def get_cap_device(dev_number):
+'''
+@brief Configures cam device for the given width-height.
+
+@param device Cam device
+@param width Desired width
+@param height Desired height
+@return Void
+'''
+def configure_cam_device(device, width, height):
+    device.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+    device.set(cv2.CAP_PROP_FRAME_HEIGHT, height)    
+
+'''
+@brief Obtains a video output device, and configure it for the given
+       width-height.
+
+@param dev_number Number of device to open
+@param width Desired width
+@param height Desired height
+@return device
+'''
+def get_cap_device(dev_number, width, height):
     dev_name = '/dev/video' + str(dev_number)
     print("Capture Device: ", dev_name)
     try:
         device = open(dev_name, 'wb')
+        if device is None:
+            print("Bad capture device")
+            exit()
     except Exception as e:
         print("Exception in opening device", dev_name)
         print(e)
         exit()
-    configure_cap_device(device) 
+    configure_cap_device(device, width, height) 
     return device
 
+'''
+@brief Configures cap device for the given width-height, and output
+       format.
 
-def configure_cap_device(device):
+@param device Cap device
+@param width Desired width
+@param height Desired height
+@return Void
+'''
+def configure_cap_device(device, width, height):
     # get capabilities
     capability = v4l2.v4l2_capability()
     fcntl.ioctl(device, v4l2.VIDIOC_QUERYCAP, capability)
@@ -61,30 +131,35 @@ def configure_cap_device(device):
     format = v4l2.v4l2_format()
     format.type = v4l2.V4L2_BUF_TYPE_VIDEO_OUTPUT
     format.fmt.pix.pixelformat = v4l2.V4L2_PIX_FMT_BGR24
-    format.fmt.pix.WIDTH = WIDTH
-    format.fmt.pix.HEIGHT = HEIGHT
+    format.fmt.pix.WIDTH = width
+    format.fmt.pix.HEIGHT = height
     format.fmt.pix.field = v4l2.V4L2_FIELD_NONE
-    format.fmt.pix.bytesperline = WIDTH * 2
-    format.fmt.pix.sizeimage = WIDTH * HEIGHT * 2
+    format.fmt.pix.bytesperline = width * 2
+    format.fmt.pix.sizeimage = width * height * 2
     format.fmt.pix.colorspace = v4l2.V4L2_COLORSPACE_JPEG
     fcntl.ioctl(device, v4l2.VIDIOC_S_FMT, format)
 
+'''
+@brief Main loop for reading the video stream from cam_device,
+       processing, and writing the video stream to cap_device.
 
-def process_video(cam_device, cap_device):
-    eng = engine.Engine(WIDTH, HEIGHT, CAM_DEVICE_NUMBER)
-
+@param cam_device Cam device (input)
+@param cap_device Cap device (output)
+@param width Desired width
+@param height Desired height
+@return Void
+'''
+def process_video(cam_device, cap_device, width, height):
+    eng = engine.Engine(width, height, CAM_DEVICE_NUMBER)
+    
     while True:
         try:
             ret, im = cam_device.read()
-            
             if not ret:
                 print("End of Input Stream")
                 break
-            out = eng.process(im)
             
-            if cap_device is None:
-                print("Bad Capture Device")
-                break
+            out = eng.process(im)
             cap_device.write(out)
 
         except Exception as e:
@@ -95,25 +170,23 @@ def process_video(cam_device, cap_device):
         if cv2.waitKey(1) == 27:
             break
 
-def parse_args(args):
-    cam_device_number = CAM_DEVICE_NUMBER
-    cap_device_number = CAP_DEVICE_NUMBER
-    if len(args) >= 2:
-        cam_device_number = int(args[1])
-    if len(args) >= 3:
-        cap_device_number = int(args[2])
-    return cam_device_number, cap_device_number
-
 
 if __name__== "__main__":
-    CAM_DEVICE_NUMBER, CAP_DEVICE_NUMBER = parse_args(sys.argv)
+
+    # parse input
+    CAM_DEVICE_NUMBER, CAP_DEVICE_NUMBER, RESOLUTION = parse_args(sys.argv)
+    print("RESOLUTION", RESOLUTION)
     print("CAM_DEVICE_NUMBER", CAM_DEVICE_NUMBER)
     print("CAP_DEVICE_NUMBER", CAP_DEVICE_NUMBER)
     
-    cam_device, HEIGHT, WIDTH = get_cam_device(CAM_DEVICE_NUMBER)
-    cap_device = get_cap_device(CAP_DEVICE_NUMBER)
+    # set up
+    width, height = get_resolution(RESOLUTION)
+    cam_device, width, height = get_cam_device(CAM_DEVICE_NUMBER, width, height)
+    cap_device = get_cap_device(CAP_DEVICE_NUMBER, width, height)
     
-    process_video(cam_device, cap_device)
+    # process
+    process_video(cam_device, cap_device, width, height)
     
+    # clean up
     del(cam_device)
     cap_device.close()
