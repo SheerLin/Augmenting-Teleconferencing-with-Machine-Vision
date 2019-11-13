@@ -5,15 +5,16 @@ import sys
 import os
 
 import cv2
-import v4l2
 
 import engine
 
-CAM_DEVICE_NUMBER = 2 # input device
-CAP_DEVICE_NUMBER = 0 # output device
+CAM_DEVICE_NUMBER = 0 # input device
+CAP_DEVICE_NUMBER = 2 # output device
 RESOLUTION = 1080
+ENABLE_VIRTUAL_CAM = False
 
-
+if ENABLE_VIRTUAL_CAM:
+    import v4l2
 '''
 @brief Parses command line arguments.
 
@@ -72,6 +73,31 @@ def get_cam_device(dev_number, width, height):
     height = im.shape[0]
     width = im.shape[1]
     print("Cam Device: ", dev_number)
+    print("Width: {}, Height: {}".format(width, height))
+    return device, width, height
+
+
+'''
+@brief Obtains a video input device, using video file as input.
+@param video_path Number of device to open
+@return device, width, height
+'''
+def get_cam_device_from_video(video_path):
+    try:
+        device = cv2.VideoCapture(video_path)
+        width = device.get(cv2.CAP_PROP_FRAME_WIDTH)  # float
+        height = device.get(cv2.CAP_PROP_FRAME_HEIGHT)  # float
+        ret, im = device.read()
+        if not ret:
+            print("Can't read from video", video_path)
+            exit()
+    except Exception as e:
+        print("Exception in opening video", video_path)
+        print(e)
+        exit()
+    height = im.shape[0]
+    width = im.shape[1]
+    print("Video input: ", video_path)
     print("Width: {}, Height: {}".format(width, height))
     return device, width, height
 
@@ -160,7 +186,8 @@ def process_video(cam_device, cap_device, width, height):
                 break
             
             out = eng.process(im)
-            cap_device.write(out)
+            if ENABLE_VIRTUAL_CAM:
+                cap_device.write(out)
 
         except Exception as e:
             print(e)
@@ -177,16 +204,25 @@ if __name__== "__main__":
     CAM_DEVICE_NUMBER, CAP_DEVICE_NUMBER, RESOLUTION = parse_args(sys.argv)
     print("RESOLUTION", RESOLUTION)
     print("CAM_DEVICE_NUMBER", CAM_DEVICE_NUMBER)
-    print("CAP_DEVICE_NUMBER", CAP_DEVICE_NUMBER)
+    if ENABLE_VIRTUAL_CAM:
+        print("CAP_DEVICE_NUMBER", CAP_DEVICE_NUMBER)
     
     # set up
     width, height = get_resolution(RESOLUTION)
-    cam_device, width, height = get_cam_device(CAM_DEVICE_NUMBER, width, height)
-    cap_device = get_cap_device(CAP_DEVICE_NUMBER, width, height)
-    
-    # process
+    # cam_device, width, height = get_cam_device(CAM_DEVICE_NUMBER, width, height)
+    cam_device, width, height = get_cam_device_from_video('data/wb_mengmeng.mov')
+    # cam_device, width, height = get_cam_device_from_video('data/AccessMath_lecture_01_part_3.mp4')
+    # cam_device, width, height = get_cam_device_from_video('raw-data/Piotr-wb.mov')
+    # cam_device, width, height = get_cam_device_from_video('raw-data/classroom-wb.mov')
+    if ENABLE_VIRTUAL_CAM:
+        cap_device = get_cap_device(CAP_DEVICE_NUMBER, width, height)
+    else:
+        cap_device = None
+
+    # processcap_device
     process_video(cam_device, cap_device, width, height)
     
     # clean up
     del(cam_device)
-    cap_device.close()
+    if ENABLE_VIRTUAL_CAM:
+        cap_device.close()

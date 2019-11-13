@@ -34,9 +34,19 @@ class Extractor:
         src_sharp = cv2.filter2D(src, -1, kernel)
         # cv2.imshow('Sharp', src_sharp)
 
+        # Apply CLAHE for histogram equilization
+        src = src_sharp
+        src_lab = cv2.cvtColor(src, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(src_lab)
+        clahe = cv2.createCLAHE(clipLimit=2, tileGridSize=(8, 8))
+        cl = clahe.apply(l)
+        src_clab = cv2.merge((cl, a, b))
+        src_clahe = cv2.cvtColor(src_clab, cv2.COLOR_LAB2BGR)
+        # cv2.imshow('Clahe', src_clahe)
+
         # TODO check HUE space
         # Filter out other colors
-        src = src_sharp
+        src = src_clahe
         delta = 60
         m = 1.5
         pixels = src[center_y:center_y+center_box_h, center_x:center_x+center_box_w].copy()
@@ -147,6 +157,7 @@ class Extractor:
         x,y,w,h = 0, 0, self.width, self.height
         center_x, center_y, center_box_w, center_box_h = self.dims_center
         contours = sorted(contours, key = cv2.contourArea)
+        # cv2.drawContours(src_ex, contours[-5:], -1, (255, 0, 0), 2)
         for c in contours[-5:]:
             peri = cv2.arcLength(c, True)
             approx = cv2.approxPolyDP(c, 0.03 * peri, True)
@@ -158,7 +169,7 @@ class Extractor:
             is_big = area > 0.15 * self.area and area < 0.8 * self.area
             is_center_x = x <= center_x+center_box_w/2 and x+w >= center_x+center_box_w/2
             is_center_y = y <= center_y + center_box_h/2 and y+h >= center_y+center_box_h/2
-            
+
             if is_rectangular and is_big and is_center_x and is_center_y:
                 # debug
                 cv2.drawContours(src_ex, [c], 0, (0, 255, 0), 2)
@@ -167,6 +178,7 @@ class Extractor:
         return src_ex, (x,y,w,h)
 
     def update_points(self, points, dims, closeness):
+        threshold = 2
         if self.points is not None:
             saved_points = self.points + self.dims[:2]
             cur_points = points + dims[:2]
@@ -180,7 +192,7 @@ class Extractor:
                 if self.new_points is not None:
                     new_points = self.new_points + self.new_dims[:2]
                     if np.allclose(new_points, cur_points, atol=closeness):
-                        if self.new_seen == 3:
+                        if self.new_seen == threshold:
                             print('>>> Switch Points <<<')
                             self.points = points
                             self.dims = dims
@@ -241,8 +253,9 @@ class Extractor:
         # Extract whiteboard
         if self.points is not None:
             src_ex = self.crop(orig)
-            show = np.hstack([src_a, src_b])
-            # cv2.imshow('Processing', show)
+            # show = np.hstack([src_a, src_b])
+            src_a = cv2.resize(src_a, (0, 0), fx=0.5, fy=0.5)
+            cv2.imshow('Processing', src_a)
             return src_ex
 
         # Failed detection/extraction

@@ -2,6 +2,7 @@ import time
 
 import cv2
 import numpy as np
+import math
 
 import beautifier
 import extractor
@@ -20,18 +21,21 @@ class Engine:
         self.frame_num = 0
         self.start_time = 0
         self.end_time = 0
-        
+        diag = int(math.sqrt(width**2 + height**2))
         self.extractor = extractor.Extractor({
             'width': self.width,
             'height': self.height,
             'freq': SAMPLE_FREQ,
-            'closeness': 20,
-            'center': (300, 100, 40, 40),
+            # values calculated by 600x480, diagnal 768
+            # 'closeness': 20, # TODO: not using a hardcoded pixels, but using percentage to W/H
+            # 'center': (300, 100, 40, 40), # TODO: not using a hardcoded pixels, but using percentage to W/H
+            'closeness': diag//40,
+            'center': (self.width//2 - diag//40, self.height//5 * 2, diag//20, diag//20),
             'benchmark': BENCHMARK
         })
-        self.undistorter = undistortion.Undistortion(
-            cam_device_number=self.cam_device_number
-        )
+        # self.undistorter = undistortion.Undistortion(
+        #     cam_device_number=self.cam_device_number
+        # )
         self.beautifier = beautifier.Beautifier({
 
         })
@@ -87,9 +91,9 @@ class Engine:
         src = orig.copy(order='C')
         # cv2.imshow('orig', src)
         
-        src, self.run_pre_sum = self.average(src, self.run_pre, self.run_pre_sum)
+        # src, self.run_pre_sum = self.average(src, self.run_pre, self.run_pre_sum)
 
-        src = self.undistorter(src).copy(order='C')        
+        # src = self.undistorter(src).copy(order='C')
         # cv2.imshow('undistorter', src)
         
         src = self.extractor(src, self.frame_num)
@@ -104,9 +108,11 @@ class Engine:
 
         # show = np.hstack([orig, src])
         # cv2.imshow('Video', show)
-
+        orig = cv2.resize(orig, (0, 0), fx=0.5, fy=0.5)
         cv2.imshow('Orig', orig)
-        # cv2.imshow('Out', src)
+        src = cv2.resize(src, (0, 0), fx=0.5, fy=0.5)
+        cv2.imshow('Out', src)
+
         return src
 
 ####################
