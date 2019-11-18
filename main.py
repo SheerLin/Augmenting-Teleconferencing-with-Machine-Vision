@@ -181,19 +181,19 @@ def process_video(cam_device, cap_device, width, height):
     eng = engine.Engine(width, height, CAM_DEVICE_NUMBER)
     
     while True:
-        try:
-            ret, im = cam_device.read()
-            if not ret:
-                print("End of Input Stream")
-                break
-            
-            out = eng.process(im)
-            if ENABLE_VIRTUAL_CAM:
-                cap_device.write(out)
-
-        except Exception as e:
-            print(e)
+        # try:
+        ret, im = cam_device.read()
+        if not ret:
+            print("End of Input Stream")
             break
+        
+        out = eng.process(im)
+        if ENABLE_VIRTUAL_CAM:
+            cap_device.write(out)
+
+        # except Exception as e:
+        #     print(e)
+        #     break
         
         # break on `escape` press
         if cv2.waitKey(1) == 27:
@@ -207,18 +207,19 @@ if __name__== "__main__":
     # camera device, capture device, resoultion, enbale gui, 
     # enable vcam, distortion profile, video path
     CAM_DEVICE_NUMBER, CAP_DEVICE_NUMBER, RESOLUTION = parse_args(sys.argv)
-    print("RESOLUTION", RESOLUTION)
     print("CAM_DEVICE_NUMBER", CAM_DEVICE_NUMBER)
     if ENABLE_VIRTUAL_CAM:
         print("CAP_DEVICE_NUMBER", CAP_DEVICE_NUMBER)
+    print("RESOLUTION", RESOLUTION)
     
     # set up
     width, height = get_resolution(RESOLUTION)
     # cam_device, width, height = get_cam_device(CAM_DEVICE_NUMBER, width, height)
-    cam_device, width, height = get_cam_device_from_video('data/wb_mengmeng.mov')
+    # cam_device, width, height = get_cam_device_from_video('data/wb_mengmeng.mov')
     # cam_device, width, height = get_cam_device_from_video('data/AccessMath_lecture_01_part_3.mp4')
     # cam_device, width, height = get_cam_device_from_video('raw-data/Piotr-wb.mov')
     # cam_device, width, height = get_cam_device_from_video('raw-data/classroom-wb.mov')
+    cam_device, width, height = get_cam_device_from_video('data/final1.webm')
     if ENABLE_VIRTUAL_CAM:
         cap_device = get_cap_device(CAP_DEVICE_NUMBER, width, height)
     else:

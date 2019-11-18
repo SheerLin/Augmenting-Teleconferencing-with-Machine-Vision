@@ -33,9 +33,9 @@ class Engine:
             'center': (self.width//2 - diag//40, self.height//5 * 2, diag//20, diag//20),
             'benchmark': BENCHMARK
         })
-        # self.undistorter = undistortion.Undistortion(
-        #     cam_device_number=self.cam_device_number
-        # )
+        self.undistorter = undistortion.Undistortion(
+            cam_device_number=self.cam_device_number
+        )
         self.beautifier = beautifier.Beautifier({
 
         })
@@ -93,7 +93,7 @@ class Engine:
         
         # src, self.run_pre_sum = self.average(src, self.run_pre, self.run_pre_sum)
 
-        # src = self.undistorter(src).copy(order='C')
+        src = self.undistorter(src).copy(order='C')
         # cv2.imshow('undistorter', src)
         
         src = self.extractor(src, self.frame_num)
