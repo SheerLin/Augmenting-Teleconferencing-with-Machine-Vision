@@ -7,13 +7,14 @@ import os
 import cv2
 
 import engine
+import undistortion
 
 CAM_DEVICE_NUMBER = 0 # input device
 CAP_DEVICE_NUMBER = 2 # output device
 RESOLUTION = 1080
 
 ENABLE_VIRTUAL_CAM = False
-ENABLE_GUI = True
+ENABLE_GUI = False
 
 if ENABLE_VIRTUAL_CAM:
     import v4l2
@@ -178,7 +179,7 @@ def configure_cap_device(device, width, height):
 @return Void
 '''
 def process_video(cam_device, cap_device, width, height):
-    eng = engine.Engine(width, height, CAM_DEVICE_NUMBER)
+    eng = engine.Engine(width, height)
     
     while True:
         # try:
@@ -228,9 +229,15 @@ if __name__== "__main__":
     if ENABLE_GUI:
         # TODO
         # Start GUI for these arguments
-        # camera device, capture device, resoultion, enbale gui, 
+        # camera device, capture device, resolution, enable gui,
         # enable vcam, distortion profile, video path
-        pass
+        print("Use UI")
+    else:
+        # TODO - refactor the code to initialize the profile path before processing video
+        print("No UI")
+        # undistortion_preprocessor = undistortion.UndistortionPreProcessor(CAM_DEVICE_NUMBER)
+        # img_path, obj_path = undistortion_preprocessor()
+
 
     # processcap_device
     process_video(cam_device, cap_device, width, height)
