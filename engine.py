@@ -14,10 +14,10 @@ BENCHMARK = True
 
 class Engine:
 
-    def __init__(self, width, height, cam_device_number):
+    def __init__(self, width, height):
         self.width = width
         self.height = height
-        self.cam_device_number = cam_device_number
+        # self.cam_device_number = cam_device_number
         self.frame_num = 0
         self.start_time = 0
         self.end_time = 0
