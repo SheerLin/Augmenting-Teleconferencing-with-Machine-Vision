@@ -44,7 +44,7 @@ def get_resolution(res):
         width, height = 1280, 720
     if res == 600:
         width, height = 800, 600
-    else:
+    else: # 480p
         width, height = 640, 480
     return width, height
 
