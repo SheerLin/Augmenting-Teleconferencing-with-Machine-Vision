@@ -11,7 +11,9 @@ import engine
 CAM_DEVICE_NUMBER = 0 # input device
 CAP_DEVICE_NUMBER = 2 # output device
 RESOLUTION = 1080
+
 ENABLE_VIRTUAL_CAM = False
+ENABLE_GUI = True
 
 if ENABLE_VIRTUAL_CAM:
     import v4l2
@@ -201,6 +203,9 @@ def process_video(cam_device, cap_device, width, height):
 if __name__== "__main__":
 
     # parse input
+    # TODO
+    # camera device, capture device, resoultion, enbale gui, 
+    # enable vcam, distortion profile, video path
     CAM_DEVICE_NUMBER, CAP_DEVICE_NUMBER, RESOLUTION = parse_args(sys.argv)
     print("RESOLUTION", RESOLUTION)
     print("CAM_DEVICE_NUMBER", CAM_DEVICE_NUMBER)
@@ -218,6 +223,13 @@ if __name__== "__main__":
         cap_device = get_cap_device(CAP_DEVICE_NUMBER, width, height)
     else:
         cap_device = None
+        
+    if ENABLE_GUI:
+        # TODO
+        # Start GUI for these arguments
+        # camera device, capture device, resoultion, enbale gui, 
+        # enable vcam, distortion profile, video path
+        pass
 
     # processcap_device
     process_video(cam_device, cap_device, width, height)
