@@ -50,7 +50,7 @@ class Extractor:
         delta = 60
         m = 1.5
         pixels = src[center_y:center_y+center_box_h, center_x:center_x+center_box_w].copy()
-        pixels = pixels.reshape((pixels.shape[1] * pixels.shape[1], pixels.shape[2]))
+        pixels = pixels.reshape((pixels.shape[0] * pixels.shape[1], pixels.shape[2]))
         avg = pixels.mean(axis=0).reshape((3))
         lower = np.maximum(avg-delta, 0).astype('uint8')
         upper = np.minimum(avg+delta*m, 255).astype('uint8')
@@ -178,7 +178,7 @@ class Extractor:
         return src_ex, (x,y,w,h)
 
     def update_points(self, points, dims, closeness):
-        threshold = 2
+        threshold = 1
         if self.points is not None:
             saved_points = self.points + self.dims[:2]
             cur_points = points + dims[:2]

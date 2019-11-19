@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-
 import cv2
 import glob
 import os
@@ -26,30 +25,25 @@ default_profile_symbol = "d"
 none_profile_symbol = "n"
 
 
-# to_calibrate_path = 'data/distorted/'
-
 # General steps
 #  1. If has chessboards images folder path, use this path to get point.
 #  2. if has profile path for image points and obj_points, use this profile
 #  3. If no profile path and no has chessboards images folder path, select from the existing profiles
 #  4. Undistort the image
-
-
 class Undistortion:
-    def __init__(self, cam_device_number: int = 0, chessboard_folder_path=None, img_points_path=None,
-                 obj_points_path=None, ):
+    def __init__(self, chessboard_folder_path=None, img_points_path=None,obj_points_path=None, ):
         # TODO[low] - Refactor the format of parameters
         self.img_points_path = img_points_path
         self.obj_points_path = obj_points_path
         self.chessboard_folder_path = chessboard_folder_path
-        self.cam_device_number = cam_device_number
+        # self.cam_device_number = cam_device_number
 
         # TO be initialized:
         # Arrays to store object points and image points from all the images.
         self.obj_points = []  # 3d point in real world space
         self.img_points = []  # 2d points in image plane.
-        self.device_to_profile = dict()  # Profile for selecting profile: <device> -> [list of (img path,obj path)]
-        self.device_name = None
+        # self.device_to_profile = dict()  # Profile for selecting profile: <device> -> [list of (img path,obj path)]
+        # self.device_name = None
 
         # debug
         self.show_image = False
@@ -58,7 +52,7 @@ class Undistortion:
         self.crop = True
         self.imshow_size = cv2.WINDOW_NORMAL  # cv2.WINDOW_FULLSCREEN
         self.default_remap = False
-        self.find_all_device = False
+        # self.find_all_device = False
         self.skip_undistort = False
 
         self.initialize()
@@ -72,8 +66,8 @@ class Undistortion:
     def initialize(self):
         """Initialize the needed info"""
 
-        # 1. Init self.device_to_profile
-        self.__init_profile_mapping()
+        #  TODO - remove 1. Init self.device_to_profile
+        # self.__init_profile_mapping()
 
         # print("self.chessboard_folder_path", self.chessboard_folder_path)
         # print("self.img_points_path", self.img_points_path)
@@ -90,10 +84,15 @@ class Undistortion:
                     and self.obj_points_path and os.path.exists(self.obj_points_path):
                 pass
             else:
-                self.img_points_path, self.obj_points_path = self.__select_profile()
-                if not self.img_points_path or not self.obj_points_path:
-                    print("Failed to initialize profile path.")
-                    return False
+                # TODO - return false here
+                self.skip_undistort = True
+                print("No available profile. Skip undistortion.")
+                return False
+
+                # self.img_points_path, self.obj_points_path = self.__select_profile()
+                # if not self.img_points_path or not self.obj_points_path:
+                #     print("Failed to initialize profile path.")
+                #     return False
 
             print("Use img_points_path:", self.img_points_path)
             print("Use obj_points_path:", self.obj_points_path)
@@ -156,229 +155,6 @@ class Undistortion:
         # print("obj_points", type(obj_points), "len=", len(obj_points))
 
         return img_points, obj_points
-
-    def __init_profile_mapping(self):
-        """Reading from mapping profile to initialize self.device_to_profile
-        and initialize the device name"""
-
-        if device_profile_mapping_file and os.path.isfile(device_profile_mapping_file):
-
-            with open(device_profile_mapping_file, 'r+') as file:
-                lines = file.readlines()
-                for line in lines:
-                    line_array = line.strip('\n').split(",")
-                    if len(line_array) != 3:
-                        # print("Skip current line due to incorrect format:", line_array)
-                        continue
-
-                    current_device = str(line_array[0])
-                    current_img_path = str(line_array[1])
-                    current_obj_path = str(line_array[2])
-
-                    if not self.device_to_profile:
-                        self.device_to_profile = dict()
-
-                    if current_device not in self.device_to_profile:
-                        self.device_to_profile[current_device] = list()
-
-                    self.device_to_profile[current_device].append((current_img_path, current_obj_path))
-
-            # print("After initialize self.device_to_profile:", self.device_to_profile)
-
-        self.device_name = Undistortion.find_device_id_by_cam_device_number(self.cam_device_number)
-        return
-
-    def __select_profile(self):
-        """
-        Function:
-            1. Find current usb devices and check if it matches with the existing mapping
-            2. Find the corresponding profile according to devices, if multiple available devices found
-            Let user select with device(profile) to be used
-
-        Returns:
-            Path to img points npy file (with post fix)
-            Path to obj points npy file (with post fix)
-        """
-        print("Current device:", self.device_name)
-
-        if len(self.device_to_profile.keys()) > 0:
-
-            # 1. Find out list of devices
-            list_of_devices = Undistortion.get_usb_devices()
-
-            # 2. Iterate through the list and find if the current device has profile
-            # print(list_of_devices)
-            available_profiles_map = dict()
-            for current_device in list_of_devices:
-                if current_device in self.device_to_profile:
-
-                    if self.find_all_device or not self.device_name or current_device == self.device_name:
-                        if current_device not in available_profiles_map:
-                            available_profiles_map[current_device] = set()
-
-                        for profile_pair in self.device_to_profile[current_device]:
-                            tmp_img_path = str(profile_pair[0])
-                            tmp_obj_path = str(profile_pair[1])
-                            if tmp_img_path and os.path.exists(tmp_img_path + npy_file_postfix) \
-                                    and tmp_obj_path and os.path.exists(tmp_obj_path + npy_file_postfix):
-                                available_profiles_map[current_device].add(profile_pair)
-
-            # 3. If there is no  available profile pairs, pass
-            if len(available_profiles_map) == 0:
-                print("Skip select profile: No available device in profile mapping")
-                pass
-
-            # 4. If there is only one available profile pair, return it
-            no_profile = False
-            if len(available_profiles_map) == 1:
-
-                for the_only_device, the_pairs in available_profiles_map.items():
-                    if len(the_pairs) == 0:
-                        print("Skip select profile: No available profile path found for device", the_only_device)
-                        no_profile = True
-                        break
-                    elif len(the_pairs) == 1:
-                        print("Single profile pair found!!")
-                        selected_img_path = str(list(the_pairs)[0][0])
-                        selected_obj_path = str(list(the_pairs)[0][1])
-                        return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix
-
-            # 5. If there are multiple available profile pairs, let user select
-            if not no_profile:
-                id_to_profile = Undistortion.profile_map_formatter(available_profiles_map, "available_profiles_map")
-                while True:
-                    user_selected = input()
-                    if user_selected and len(user_selected) > 0 and str(user_selected).isdigit() \
-                            and int(user_selected) in id_to_profile:
-                        print("Valid Input:", int(user_selected), id_to_profile[int(user_selected)])
-                        selected_img_path = str(id_to_profile[int(user_selected)][0])
-                        selected_obj_path = str(id_to_profile[int(user_selected)][1])
-                        return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix
-
-                    # Enable default profiling
-                    if str(user_selected).lower() == default_profile_symbol:
-                        break
-
-                    #  Enable skipping undistortion
-                    elif str(user_selected).lower() == none_profile_symbol:
-                        self.skip_undistort = True
-                        print("Skipping undistortion!")
-                        break
-
-                    else:
-                        print("Invalid input:", user_selected)
-
-        if default_img_points_path \
-                and os.path.isfile(default_img_points_path + npy_file_postfix) \
-                and default_obj_points_path \
-                and os.path.exists(default_obj_points_path + npy_file_postfix):
-            return default_img_points_path + npy_file_postfix, default_obj_points_path + npy_file_postfix
-
-        else:
-            return False, False
-
-    @staticmethod
-    def profile_map_formatter(profile_map: dict, name: str):
-        """
-        Function:
-            Give each profile pair a unique id and print them in user readable format
-
-        Returns:
-            A dictionary: id -> (img path, obj path)
-        """
-        counter = 0
-        padding = "    "
-        id_to_profile_pair = dict()
-        # print(name, ":")
-        print("Please select a profile by entering the #:\n"
-              "(or \"" + default_profile_symbol + "\" for default profile, "
-                                                  "\"" + none_profile_symbol + "\" for not to undistort)")
-        for cur_device, cur_pair_list_or_set in profile_map.items():
-            cur_pair_list = list(cur_pair_list_or_set)
-            print(padding + Undistortion.get_usb_device(device_id=cur_device))
-            for cur_pair in cur_pair_list:
-                print(padding + padding, counter, "=", cur_pair)
-                id_to_profile_pair[counter] = cur_pair
-                counter += 1
-
-        return id_to_profile_pair
-
-    @staticmethod
-    def get_usb_devices():
-        """Get the list of <idVendor>:<idProduct> from cmd lsusb"""
-        cmd = "lsusb | awk '{print $6 }'"
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        output = p.communicate()[0].decode("utf-8")
-        usb_devices = str(output).splitlines()
-        return usb_devices
-
-    @staticmethod
-    def get_usb_device(device_id):
-        """Get the (first) line in lsusb for device with device_id"""
-        cmd = "lsusb | grep " + str(device_id)
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        output = p.communicate()[0].decode("utf-8")
-        usb_devices = str(output).splitlines()
-        if not usb_devices or len(usb_devices) == 0:
-            return []
-        else:
-            return usb_devices[0]
-
-    @staticmethod
-    def find_device_id_by_cam_device_number(cam_device_number):
-        device_vendor_product = None
-
-        # 1. Find the name of device: optional
-        # name_path = "/sys/class/video4linux/video" + str(cam_device_number) + "/name"
-        # if not os.path.exists(name_path):
-        #     print("Name file not exist:", name_path)
-        #     return device_vendor_product
-        #
-        # with open(name_path, 'r') as f:
-        #     name = f.readline()
-        #     print("Name:", name)
-
-        # 2. Find the vendor id and product id of device
-        driver_path = "/sys/class/video4linux/video" + str(cam_device_number) + "/device/input/"
-        if not os.path.exists(driver_path):
-            print("Driver folder not exist:", driver_path)
-            return device_vendor_product
-
-        input_folder = ""
-        try:
-            input_folder = os.listdir(driver_path)[0]
-        except:
-            print("Driver input folder not exist:", driver_path + input_folder)
-            return device_vendor_product
-
-        driver_path += (input_folder + "/id")
-        if not os.path.exists(driver_path):
-            print("Driver input id folder not exist:", driver_path)
-            return device_vendor_product
-
-        # Check vendor id
-        vendor_path = driver_path + "/vendor"
-        if not os.path.exists(vendor_path):
-            print("Vendor file not exist:", vendor_path)
-            return device_vendor_product
-
-        id_vendor = ""
-        with open(vendor_path, 'r') as f:
-            id_vendor = str(f.readline()).strip()
-
-        # Check product id
-        product_path = driver_path + "/product"
-        if not os.path.exists(product_path):
-            print("Product file not exist:", product_path)
-            return device_vendor_product
-
-        id_product = ""
-        with open(product_path, 'r') as f:
-            id_product = str(f.readline()).strip()
-
-        device_vendor_product = id_vendor + ":" + id_product
-
-        return device_vendor_product
 
     @staticmethod
     def chessboard_path_to_profile(set_up_chessboard_path, img_points_path, obj_points_path, devices: list):
@@ -500,95 +276,243 @@ class Undistortion:
 
         return dst
 
-    def calibrate_images(self, to_calibrate_path):
-        """Calibrate all pictures under to_calibrate_path"""
-        start_time = time.time()
-        # TODO[low] - How to defind gray
-        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(self.obj_points, self.img_points,
-                                                           gray.shape[::-1], None, None)
 
-        for f in glob.glob(to_calibrate_path + 'calibrated/*'):
-            os.remove(f)
+class UndistortionPreProcessor:
+    def __init__(self, cam_device_number: int = 0):
+        self.device_to_profile = dict()  # Profile for selecting profile: <device> -> [list of (img path,obj path)]
+        self.cam_device_number = cam_device_number
 
-        distorted_images = glob.glob(to_calibrate_path + 'original/*.jpg')
-        index = 1
-        print("Start calibrate images in:", to_calibrate_path)
+        # DEBUG
+        self.find_all_device = False
 
-        for file_name in distorted_images:
-            print(file_name)
-            img = cv2.imread(file_name)
+        self.__init_profile_mapping()
 
-            h, w = img.shape[:2]
-            new_camera_mtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
+    def __call__(self):
+        return self.__select_profile()
 
-            # Show original
-            if self.show_image:
-                cv2.imshow('img', img)
-                cv2.waitKey(100)
+    def __init_profile_mapping(self):
+        """Reading from mapping profile to initialize self.device_to_profile
+        and initialize the device name"""
 
-            if self.save_image:
-                cv2.imwrite(to_calibrate_path + 'calibrated/' + str(index) + '_0original.jpg', img)
+        if device_profile_mapping_file and os.path.isfile(device_profile_mapping_file):
 
-            # method1: undistort using undistort()
-            dst = cv2.undistort(img, mtx, dist, None, new_camera_mtx)
+            with open(device_profile_mapping_file, 'r+') as file:
+                lines = file.readlines()
+                for line in lines:
+                    line_array = line.strip('\n').split(",")
+                    if len(line_array) != 3:
+                        # print("Skip current line due to incorrect format:", line_array)
+                        continue
 
-            # Show undistorted
-            if self.show_image:
-                cv2.imshow('img', dst)
-                cv2.waitKey(100)
+                    current_device = str(line_array[0])
+                    current_img_path = str(line_array[1])
+                    current_obj_path = str(line_array[2])
 
-            if self.save_image:
-                cv2.imwrite(to_calibrate_path + 'calibrated/' + str(index) + '_1undistort.jpg', dst)
+                    if not self.device_to_profile:
+                        self.device_to_profile = dict()
 
-            if self.crop:
-                # crop the image
-                x, y, w, h = roi
-                dst = dst[y:y + h, x:x + w]
+                    if current_device not in self.device_to_profile:
+                        self.device_to_profile[current_device] = list()
 
-                # Show undistorted and cropped
-                if self.show_image:
-                    cv2.imshow('img', dst)
-                    cv2.waitKey(300)
+                    self.device_to_profile[current_device].append((current_img_path, current_obj_path))
 
-                if self.save_image:
-                    cv2.imwrite(to_calibrate_path + 'calibrated/' + str(index) + '_1undistort_cropped.jpg', dst)
+            print("After initialize self.device_to_profile:", self.device_to_profile)
 
-            if self.both_way:
-                # method2: undistort using remap
-                mapx, mapy = cv2.initUndistortRectifyMap(mtx, dist, None, new_camera_mtx, (w, h), 5)
-                dst = cv2.remap(img, mapx, mapy, cv2.INTER_LINEAR)
+        return
 
-                # Show original
-                if self.show_image:
-                    cv2.imshow('img', img)
-                    cv2.waitKey(100)
+    def __select_profile(self):
+        """
+        Function:
+            1. Find current usb devices and check if it matches with the existing mapping
+            2. Find the corresponding profile according to devices, if multiple available devices found
+            Let user select with device(profile) to be used
 
-                    # Show undistorted
-                    cv2.imshow('img', dst)
-                    cv2.waitKey(100)
+        Returns:
+            Path to img points npy file (with post fix)
+            Path to obj points npy file (with post fix)
+        """
+        self.device_name = UndistortionPreProcessor.find_device_id_by_cam_device_number(self.cam_device_number)
+        print("Current device:", self.device_name)
 
-                if self.save_image:
-                    cv2.imwrite(to_calibrate_path + 'calibrated/' + str(index) + '_2remap.jpg', dst)
+        if len(self.device_to_profile.keys()) > 0:
 
-                if self.crop:
-                    # crop the image
-                    x, y, w, h = roi
-                    dst = dst[y:y + h, x:x + w]
+            # 1. Find out list of devices
+            list_of_devices = UndistortionPreProcessor.get_usb_devices()
 
-                    # Show undistorted and cropped
-                    if self.show_image:
-                        cv2.imshow('img', dst)
-                        cv2.waitKey(600)
+            # 2. Iterate through the list and find if the current device has profile
+            # print(list_of_devices)
+            available_profiles_map = dict()
+            for current_device in list_of_devices:
+                if current_device in self.device_to_profile:
 
-                    if self.save_image:
-                        cv2.imwrite(to_calibrate_path + 'calibrated/' + str(index) + '_2remap_cropped.jpg', dst)
+                    if self.find_all_device or not self.device_name or current_device == self.device_name:
+                        if current_device not in available_profiles_map:
+                            available_profiles_map[current_device] = set()
 
-            index += 1
+                        for profile_pair in self.device_to_profile[current_device]:
+                            tmp_img_path = str(profile_pair[0])
+                            tmp_obj_path = str(profile_pair[1])
+                            if tmp_img_path and os.path.exists(tmp_img_path + npy_file_postfix) \
+                                    and tmp_obj_path and os.path.exists(tmp_obj_path + npy_file_postfix):
+                                available_profiles_map[current_device].add(profile_pair)
 
-        elapsed_time = time.time() - start_time
-        print("Undistort", len(distorted_images), " pictures:", elapsed_time)
+            # 3. If there is no  available profile pairs, pass
+            if len(available_profiles_map) == 0:
+                print("Skip select profile: No available device in profile mapping")
+                pass
 
-        cv2.destroyAllWindows()
+            # 4. If there is only one available profile pair, return it
+            no_profile = False
+            if len(available_profiles_map) == 1:
+
+                for the_only_device, the_pairs in available_profiles_map.items():
+                    if len(the_pairs) == 0:
+                        print("Skip select profile: No available profile path found for device", the_only_device)
+                        no_profile = True
+                        break
+                    elif len(the_pairs) == 1:
+                        print("Single profile pair found!!")
+                        selected_img_path = str(list(the_pairs)[0][0])
+                        selected_obj_path = str(list(the_pairs)[0][1])
+                        return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix
+
+            # 5. If there are multiple available profile pairs, let user select
+            if not no_profile:
+                id_to_profile = UndistortionPreProcessor.profile_map_formatter(available_profiles_map,
+                                                                               "available_profiles_map")
+                while True:
+                    user_selected = input()
+                    if user_selected and len(user_selected) > 0 and str(user_selected).isdigit() \
+                            and int(user_selected) in id_to_profile:
+                        print("Valid Input:", int(user_selected), id_to_profile[int(user_selected)])
+                        selected_img_path = str(id_to_profile[int(user_selected)][0])
+                        selected_obj_path = str(id_to_profile[int(user_selected)][1])
+                        return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix
+
+                    # Enable default profiling
+                    if str(user_selected).lower() == default_profile_symbol:
+                        break
+
+                    #  Enable skipping undistortion
+                    elif str(user_selected).lower() == none_profile_symbol:
+                        self.skip_undistort = True
+                        print("Skipping undistortion!")
+                        break
+
+                    else:
+                        print("Invalid input:", user_selected)
+
+        if default_img_points_path \
+                and os.path.isfile(default_img_points_path + npy_file_postfix) \
+                and default_obj_points_path \
+                and os.path.exists(default_obj_points_path + npy_file_postfix):
+            return default_img_points_path + npy_file_postfix, default_obj_points_path + npy_file_postfix
+
+        else:
+            return False, False
+
+    @staticmethod
+    def find_device_id_by_cam_device_number(cam_device_number):
+        device_vendor_product = None
+
+        # 1. Find the name of device: optional
+        name_path = "/sys/class/video4linux/video" + str(cam_device_number) + "/name"
+        if not os.path.exists(name_path):
+            print("Name file not exist:", name_path)
+            return device_vendor_product
+
+        with open(name_path, 'r') as f:
+            name = f.readline()
+            print("Name:", name)
+
+        # 2. Find the vendor id and product id of device
+        driver_path = "/sys/class/video4linux/video" + str(cam_device_number) + "/device/input/"
+        if not os.path.exists(driver_path):
+            print("Driver folder not exist:", driver_path)
+            return device_vendor_product
+
+        input_folder = ""
+        try:
+            input_folder = os.listdir(driver_path)[0]
+        except:
+            print("Driver input folder not exist:", driver_path + input_folder)
+            return device_vendor_product
+
+        driver_path += (input_folder + "/id")
+        if not os.path.exists(driver_path):
+            print("Driver input id folder not exist:", driver_path)
+            return device_vendor_product
+
+        # Check vendor id
+        vendor_path = driver_path + "/vendor"
+        if not os.path.exists(vendor_path):
+            print("Vendor file not exist:", vendor_path)
+            return device_vendor_product
+
+        id_vendor = ""
+        with open(vendor_path, 'r') as f:
+            id_vendor = str(f.readline()).strip()
+
+        # Check product id
+        product_path = driver_path + "/product"
+        if not os.path.exists(product_path):
+            print("Product file not exist:", product_path)
+            return device_vendor_product
+
+        id_product = ""
+        with open(product_path, 'r') as f:
+            id_product = str(f.readline()).strip()
+
+        device_vendor_product = id_vendor + ":" + id_product
+
+        return device_vendor_product
+
+    @staticmethod
+    def get_usb_devices():
+        """Get the list of <idVendor>:<idProduct> from cmd lsusb"""
+        cmd = "lsusb | awk '{print $6 }'"
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        output = p.communicate()[0].decode("utf-8")
+        usb_devices = str(output).splitlines()
+        return usb_devices
+
+    @staticmethod
+    def profile_map_formatter(profile_map: dict, name: str):
+        """
+        Function:
+            Give each profile pair a unique id and print them in user readable format
+
+        Returns:
+            A dictionary: id -> (img path, obj path)
+        """
+        counter = 0
+        padding = "    "
+        id_to_profile_pair = dict()
+        # print(name, ":")
+        print("Please select a profile by entering the #:\n"
+              "(or \"" + default_profile_symbol + "\" for default profile, "
+                                                  "\"" + none_profile_symbol + "\" for not to undistort)")
+        for cur_device, cur_pair_list_or_set in profile_map.items():
+            cur_pair_list = list(cur_pair_list_or_set)
+            print(padding + UndistortionPreProcessor.get_usb_device(device_id=cur_device))
+            for cur_pair in cur_pair_list:
+                print(padding + padding, counter, "=", cur_pair)
+                id_to_profile_pair[counter] = cur_pair
+                counter += 1
+
+        return id_to_profile_pair
+
+    @staticmethod
+    def get_usb_device(device_id):
+        """Get the (first) line in lsusb for device with device_id"""
+        cmd = "lsusb | grep " + str(device_id)
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        output = p.communicate()[0].decode("utf-8")
+        usb_devices = str(output).splitlines()
+        if not usb_devices or len(usb_devices) == 0:
+            return []
+        else:
+            return usb_devices[0]
 
 
 def parse_args(args):

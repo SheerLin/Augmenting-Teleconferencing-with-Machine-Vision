@@ -7,13 +7,14 @@ import os
 import cv2
 
 import engine
+import undistortion
 
 CAM_DEVICE_NUMBER = 0 # input device
 CAP_DEVICE_NUMBER = 2 # output device
 RESOLUTION = 1080
 
 ENABLE_VIRTUAL_CAM = False
-ENABLE_GUI = True
+ENABLE_GUI = False
 
 if ENABLE_VIRTUAL_CAM:
     import v4l2
@@ -178,22 +179,22 @@ def configure_cap_device(device, width, height):
 @return Void
 '''
 def process_video(cam_device, cap_device, width, height):
-    eng = engine.Engine(width, height, CAM_DEVICE_NUMBER)
+    eng = engine.Engine(width, height)
     
     while True:
-        try:
-            ret, im = cam_device.read()
-            if not ret:
-                print("End of Input Stream")
-                break
-            
-            out = eng.process(im)
-            if ENABLE_VIRTUAL_CAM:
-                cap_device.write(out)
-
-        except Exception as e:
-            print(e)
+        # try:
+        ret, im = cam_device.read()
+        if not ret:
+            print("End of Input Stream")
             break
+        
+        out = eng.process(im)
+        if ENABLE_VIRTUAL_CAM:
+            cap_device.write(out)
+
+        # except Exception as e:
+        #     print(e)
+        #     break
         
         # break on `escape` press
         if cv2.waitKey(1) == 27:
@@ -207,18 +208,19 @@ if __name__== "__main__":
     # camera device, capture device, resoultion, enbale gui, 
     # enable vcam, distortion profile, video path
     CAM_DEVICE_NUMBER, CAP_DEVICE_NUMBER, RESOLUTION = parse_args(sys.argv)
-    print("RESOLUTION", RESOLUTION)
     print("CAM_DEVICE_NUMBER", CAM_DEVICE_NUMBER)
     if ENABLE_VIRTUAL_CAM:
         print("CAP_DEVICE_NUMBER", CAP_DEVICE_NUMBER)
+    print("RESOLUTION", RESOLUTION)
     
     # set up
     width, height = get_resolution(RESOLUTION)
     # cam_device, width, height = get_cam_device(CAM_DEVICE_NUMBER, width, height)
-    cam_device, width, height = get_cam_device_from_video('data/wb_mengmeng.mov')
+    # cam_device, width, height = get_cam_device_from_video('data/wb_mengmeng.mov')
     # cam_device, width, height = get_cam_device_from_video('data/AccessMath_lecture_01_part_3.mp4')
     # cam_device, width, height = get_cam_device_from_video('raw-data/Piotr-wb.mov')
     # cam_device, width, height = get_cam_device_from_video('raw-data/classroom-wb.mov')
+    cam_device, width, height = get_cam_device_from_video('data/final1.webm')
     if ENABLE_VIRTUAL_CAM:
         cap_device = get_cap_device(CAP_DEVICE_NUMBER, width, height)
     else:
@@ -227,9 +229,15 @@ if __name__== "__main__":
     if ENABLE_GUI:
         # TODO
         # Start GUI for these arguments
-        # camera device, capture device, resoultion, enbale gui, 
+        # camera device, capture device, resolution, enable gui,
         # enable vcam, distortion profile, video path
-        pass
+        print("Use UI")
+    else:
+        # TODO - refactor the code to initialize the profile path before processing video
+        print("No UI")
+        # undistortion_preprocessor = undistortion.UndistortionPreProcessor(CAM_DEVICE_NUMBER)
+        # img_path, obj_path = undistortion_preprocessor()
+
 
     # processcap_device
     process_video(cam_device, cap_device, width, height)
