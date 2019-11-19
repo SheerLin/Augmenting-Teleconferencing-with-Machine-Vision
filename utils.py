@@ -85,6 +85,7 @@ def find_rect(src, lines):
     bottomLeft = find_intersection(bottom, left)
     bottomRight = find_intersection(bottom, right)
 
+    # TODO: could improve to not use the corner pos, but use the intersected points
     if not is_valid_point(src, topLeft):
         topLeft = 0,0
     if not is_valid_point(src, topRight):
