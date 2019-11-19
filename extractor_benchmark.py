@@ -1,14 +1,28 @@
 import cv2
-import main
-import math
 import os
 import shutil
+import extractor
+import main
+import math
+from polygon_intersection.polygon_intersection_area import getScore
+import time
+
+benchmark_logger = None
+
+def log(str):
+    print (str)
+    benchmark_logger.write(str + '\n')
 
 if __name__== "__main__":
-    dir = 'data'
+    start_time = time.time()
+    dir = 'data/benchmark'
+    main.ENABLE_VIRTUAL_CAM = False
+    main.ENABLE_GUI = False
     videos = {} # filename without extension-> path to file
     labels = {} # filename without extension -> path to file
-    diffs = []
+    f1_scores = []
+    precisions = []
+    recalls = []
     for file in os.listdir(dir):
         items = file.split(".")
         filename = items[0]
@@ -19,21 +33,26 @@ if __name__== "__main__":
             continue
         else:
             videos[filename] = dir + "/" + file
+    benchmark_logger = open(dir + '/benchmark_result.log', "w")
     for filename in videos:
         video_path = videos[filename]
+        log('---------------------- ' + video_path + ' ---------------------')
         label_path = labels[filename]
         log_path = dir + "/" + filename + ".log"
-        print (video_path)
-        print (label_path)
-        print (log_path)
+        log(video_path)
+        log(label_path)
+        log(log_path)
         if os.path.exists("extract_points.log"):
             os.remove('extract_points.log')
+
         cam_device = cv2.VideoCapture(video_path)
-        main.process_video(cam_device, None)
+        width = int(cam_device.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cam_device.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        main.process_video(cam_device, None, width, height)
         shutil.copyfile('extract_points.log', log_path)
-        width = cam_device.get(cv2.CAP_PROP_FRAME_WIDTH)  # float
-        height = cam_device.get(cv2.CAP_PROP_FRAME_HEIGHT)  # float
+        
         del (cam_device)
+        output_points = [[0,0],[0,0],[0,0],[0,0]]
         target_points = [[0,0],[0,0],[0,0],[0,0]]
         with open(label_path, "r") as benchmark_file:
             line = benchmark_file.readline()
@@ -42,28 +61,42 @@ if __name__== "__main__":
                 p = point.split(",")
                 target_points[idx][0] = float(p[0])
                 target_points[idx][1] = float(p[1])
-        print(target_points)
 
-
-        print("log_path", log_path)
         with open(log_path, "r") as log_file:
             cnt = 0
-            diff_total = 0
+            f1_score_total = 0
+            precision_total = 0
+            recall_total = 0
             for line in log_file:
                 cnt+=1
-                # print("Line {}: {}".format(cnt, line))
                 points = line.split(";")[:-1]
-                diff = 0
                 for idx, point in enumerate(points):
                     p = point.split(",")
-                    # print("point", point, "target",target_points[idx])
-                    diff += math.sqrt((float(p[0]) - target_points[idx][0]) ** 2 + (float(p[1]) - target_points[idx][1])**2)
-
-                diff_total += diff / 4
-            print ("cnt", cnt   )
-            diff_percentage = round(100 * diff_total / cnt / math.sqrt(width ** 2 + height ** 2), 2)
-            print ("cnt", cnt, "width", width, "height", height, "diff", round(diff_total/cnt,2),
-                   "(", diff_percentage , "%)")
-            diffs.append(diff_percentage)
-    print ('avg diff percentage', sum(diffs) / float(len(diffs)), "%")
+                    output_points[idx][0] = float(p[0]) 
+                    output_points[idx][1] = float(p[1])
+                precision, recall, f1 = getScore(output_points, target_points, width, height)
+                f1_score_total += f1
+                precision_total += precision
+                recall_total += recall
+            f1_score_avg = f1_score_total / cnt
+            precision_avg = precision_total / cnt
+            recall_avg = recall_total / cnt
+            f1_scores.append(f1_score_avg)
+            precisions.append(precision_avg)
+            recalls.append(recall_avg)
+            log('sample output points: ' + str(output_points))
+            log('sample target points: ' + str(target_points))
+            log('avg precision for this video: ' + str(precision_avg))
+            log('avg recall for this video: ' + str(recall_avg))
+            log('avg f1_score for this video: ' + str(f1_score_avg))
+            log('---------------------- ' + video_path + ' ---------------------\n\n')
+    elapsed_time = time.time() - start_time
+    log('\n\n---------------------- benchmark result ---------------------')
+    log('processed '+ str(len(videos)) +' videos')
+    log('elapsed time: ' + str(int(elapsed_time)) + ' seconds')
+    log('avg precisionfor all videos: ' + str(sum(precisions) / float(len(precisions))))
+    log('avg recall for all videos: ' + str(sum(recalls) / float(len(recalls))))
+    log('avg f1_score for all videos: ' + str(sum(f1_scores) / float(len(f1_scores))))
+    log('benchmark results saved to: ' + dir + '/benchmark_result.log')
+    benchmark_logger.close()
 

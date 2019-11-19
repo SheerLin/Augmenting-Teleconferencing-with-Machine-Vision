@@ -1,9 +1,9 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
-from polygon import Polygon
-from convex_intersect import convexIntersect
-
+from polygon_intersection.polygon import Polygon
+from polygon_intersection.convex_intersect import convexIntersect
+import sys
 def get_intersection(poly1, poly2):
     # print (poly2.convex())
     # print (poly2.simple())
@@ -12,36 +12,38 @@ def get_intersection(poly1, poly2):
     intersect = convexIntersect(poly1, poly2)
     # print (intersect)
 
-    x, y = np.array(intersect.getContourPoints()).T
-    x1, y1 = np.array(poly1.getContourPoints()).T
-    x2, y2 = np.array(poly2.getContourPoints()).T
-    plt.plot(x1, y1)
-    plt.plot(x2, y2)
-    plt.plot(x, y, c='k')
-    for c in intersect.getPoints():
-        plt.scatter(c[0], c[1])
-    plt.gca().invert_yaxis()
-    plt.show()
+    # x, y = np.array(intersect.getContourPoints()).T
+    # x1, y1 = np.array(poly1.getContourPoints()).T
+    # x2, y2 = np.array(poly2.getContourPoints()).T
+    # plt.plot(x1, y1)
+    # plt.plot(x2, y2)
+    # plt.plot(x, y, c='k')
+    # for c in intersect.getPoints():
+    #     plt.scatter(c[0], c[1])
+    # plt.gca().invert_yaxis()
+    # plt.show()
+    # plt.pause(0.001)
     return intersect
 
 def getScore(outputPts, expectedPts, width, height):
-    print ('output points:', outputPts)
-    print ('expected points:', expectedPts)
+    # print ('output points:', outputPts)
+    # print ('expected points:', expectedPts)
     wholeArea = width * height
     outputPoly = Polygon(outputPts)
     expectedPoly = Polygon(expectedPts)
     intersectPoly = get_intersection(outputPoly, expectedPoly)
-    #print("whole area", wholeArea)
-    #print("polexpectedPoly area", outputPoly.getArea())
-    #print("expectedPoly area", expectedPoly.getArea())
-    #print("intersectPoly area", intersectPoly.getArea())
+    # print("whole area", wholeArea)
+    # print("polexpectedPoly area", outputPoly.getArea())
+    # print("expectedPoly area", expectedPoly.getArea())
+    # print("intersectPoly area", intersectPoly.getArea())
     precision = intersectPoly.getArea() / outputPoly.getArea() # True positive / (True Positive + false positive)
     recall =  intersectPoly.getArea()  / expectedPoly.getArea() # True positive / (True Positive + false negative)
     f1 = 2 * precision * recall / (precision + recall)
-    print ("precision: ", precision * 100, "%")
-    print ("recall: ", recall * 100, "%")
-    print("f1 score: ", f1)
-    return f1
+    # print ("precision: ", precision * 100, "%")
+    # print ("recall: ", recall * 100, "%")
+    # print("f1 score: ", f1)
+    sys.stdout.flush()
+    return precision, recall, f1
 
 
 def test_intersection1():
@@ -98,14 +100,14 @@ def test_getScore1():
     outputPts = [[40.0, 120.0], [1920.0, 120.0], [40.0, 1001.0], [1920.0, 1001.0]]
     width = 1920
     height = 1080
-    f1 = getScore(outputPts, expectedPts, width, height)
+    precision, recall, f1 = getScore(outputPts, expectedPts, width, height)
 
 def test_getScore2():
     expectedPts = [[208,57],[986,141],[157,669],[965,693]]
     outputPts = [[0.0,0.0],[809.0,63.47858472998138],[0.0,630.0],[809.0,618.8025477707006]]
     width = 1280
     height = 720
-    f1 = getScore(outputPts, expectedPts, width, height)
+    precision, recall, f1 = getScore(outputPts, expectedPts, width, height)
 
-test_getScore1()
-test_getScore2()
+# test_getScore1()
+# test_getScore2()

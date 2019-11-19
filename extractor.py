@@ -225,9 +225,20 @@ class Extractor:
 
         if self.logfile:
             for i in range(len(self.points)):
-                self.logfile.write(str(self.points[i][0]) + "," + str(self.points[i][1]) + ";")
+                self.logfile.write(str(self.points[i][0]+x) + "," + str(self.points[i][1]+y) + ";")
             self.logfile.write("\n")
         
+        np_points = np.array(self.points, np.int)[[0,1,3,2],:]
+        np_points[:,0] = np_points[:,0] + self.dims[0]
+        np_points[:,1] = np_points[:,1] + self.dims[1]
+        # print (np_points)
+
+
+        detected = orig.copy()
+        cv2.polylines(detected, [np_points], True, (0,255,0), thickness=3)
+        detected = cv2.resize(detected, (0, 0), fx=0.5, fy=0.5)
+        # cv2.imwrite("output/frame_" + str(frame_num)+"_process.jpg", processed)  
+        cv2.imshow('detected wb', detected)
         return src
 
     def extract_whiteboard(self, orig, frame_num):
@@ -249,7 +260,6 @@ class Extractor:
         
         if points is not None:
             self.update_points(points, dims, self.params['closeness'])
-            
         # Extract whiteboard
         if self.points is not None:
             src_ex = self.crop(orig)

@@ -34,7 +34,7 @@ class Engine:
             'benchmark': BENCHMARK
         })
         self.undistorter = undistortion.Undistortion(
-            cam_device_number=self.cam_device_number
+            # cam_device_number=self.cam_device_number
         )
         self.beautifier = beautifier.Beautifier({
 
@@ -93,7 +93,7 @@ class Engine:
         
         # src, self.run_pre_sum = self.average(src, self.run_pre, self.run_pre_sum)
 
-        src = self.undistorter(src).copy(order='C')
+        # src = self.undistorter(src).copy(order='C')
         # cv2.imshow('undistorter', src)
         
         src = self.extractor(src, self.frame_num)
@@ -108,8 +108,8 @@ class Engine:
 
         # show = np.hstack([orig, src])
         # cv2.imshow('Video', show)
-        orig = cv2.resize(orig, (0, 0), fx=0.5, fy=0.5)
-        cv2.imshow('Orig', orig)
+        # orig = cv2.resize(orig, (0, 0), fx=0.5, fy=0.5)
+        # cv2.imshow('Orig', orig)
         src = cv2.resize(src, (0, 0), fx=0.5, fy=0.5)
         cv2.imshow('Out', src)
 

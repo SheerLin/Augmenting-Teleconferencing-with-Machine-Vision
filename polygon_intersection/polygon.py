@@ -10,9 +10,9 @@
     final point, back to the first point.
 """
 
-from point import Point
-from edge import Edge
-from util import computeAngleSign
+from polygon_intersection.point import Point
+from polygon_intersection.edge import Edge
+from polygon_intersection.util import computeAngleSign
 
 class Polygon:
     """Represents polygon of points in Cartesian space."""
@@ -92,10 +92,10 @@ class Polygon:
 
     def getArea(self):
         area = 0
-        area += self.points[0].x() * self.points[1].y() - self.points[0].y() * self.points[1].x()
-        area += self.points[1].x() * self.points[2].y() - self.points[1].y() * self.points[2].x()
-        area += self.points[2].x() * self.points[3].y() - self.points[2].y() * self.points[3].x()
-        area += self.points[3].x() * self.points[0].y() - self.points[3].y() * self.points[0].x()
+        N = len(self.points)
+        for i in range(N-1):
+            area += self.points[i].x() * self.points[i+1].y() - self.points[i].y() * self.points[i+1].x()
+        area += self.points[N-1].x() * self.points[0].y() - self.points[N-1].y() * self.points[0].x()
         area = abs(area)
         return area
 

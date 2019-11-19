@@ -1,6 +1,6 @@
-from polygon import Polygon
-from point import Point
-from util import value,computeAngleSign
+from polygon_intersection.polygon import Polygon
+from polygon_intersection.point import Point
+from polygon_intersection.util import value,computeAngleSign
 from math import degrees, acos, sqrt
 
 """ 
