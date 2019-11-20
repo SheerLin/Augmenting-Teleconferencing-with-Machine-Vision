@@ -260,18 +260,17 @@ class Undistortion:
 
 class UndistortionPreProcessor:
     def __init__(self, cam_device_number: int = 0):
+        # TODO - can remove this as this could be the output of the function
         self.device_to_profile = dict()  # Profile for selecting profile: <device> -> [list of (img path,obj path)]
         self.cam_device_number = cam_device_number
 
         # DEBUG
         self.find_all_device = True
 
-        self.__init_profile_mapping()
-
     def __call__(self):
         return self.__select_profile()
 
-    def __init_profile_mapping(self):
+    def init_profile_mapping(self):
         """Reading from mapping profile to initialize self.device_to_profile
         and initialize the device name"""
 
@@ -299,7 +298,7 @@ class UndistortionPreProcessor:
 
             # print("After initialize self.device_to_profile:", self.device_to_profile)
 
-        return
+        return self.device_to_profile
 
     def __select_profile(self):
         """

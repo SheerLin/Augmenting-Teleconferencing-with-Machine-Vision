@@ -8,6 +8,7 @@ import cv2
 
 import engine
 import undistortion
+import interface
 
 CAM_DEVICE_NUMBER = 0 # input device
 CAP_DEVICE_NUMBER = 2 # output device
@@ -226,23 +227,35 @@ if __name__== "__main__":
     else:
         cap_device = None
 
+    # Initialize the profile path before processing video
     if ENABLE_GUI:
         # TODO
         # Start GUI for these arguments
         # camera device, capture device, resolution, enable gui,
         # enable vcam, distortion profile, video path
+
+        undistortion_preprocessor = undistortion.UndistortionPreProcessor(CAM_DEVICE_NUMBER)
+        device_to_profile = undistortion_preprocessor.init_profile_mapping()
+        print("device_to_profile:",device_to_profile)
+        interface.initialize_ui(device_to_profile)
+
         print("Use UI")
         img_path = ""
         obj_path = ""
+        chessboard_path = ""
         do_undistort = False
 
+        print("Not implemented")
+        exit(0)
+
     else:
-        # TODO - refactor the code to initialize the profile path before processing video
-        print("No UI")
+        # TODO - Should also accept chessboard path as parameter
+
         undistortion_preprocessor = undistortion.UndistortionPreProcessor(CAM_DEVICE_NUMBER)
+        undistortion_preprocessor.init_profile_mapping()
         img_path, obj_path, do_undistort = undistortion_preprocessor()
-        print(img_path, obj_path)
-        print("do_undistort:",do_undistort)
+        # print(img_path, obj_path)
+        # print("do_undistort:",do_undistort)
 
 
     # processcap_device
