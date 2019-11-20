@@ -326,9 +326,12 @@ class UndistortionPreProcessor:
             Path to img points npy file (with post fix)
             Path to obj points npy file (with post fix)
         """
-        self.device_name = UndistortionPreProcessor.find_device_id_by_cam_device_number(self.cam_device_number)
+        # TODO - uncomment this
+        # self.device_name = UndistortionPreProcessor.find_device_id_by_cam_device_number(self.cam_device_number)
+
         # TODO - remove this
         self.device_name = '05a3:9230'
+
         do_undistort = True
 
         print("Current device:", self.device_name)
@@ -336,6 +339,7 @@ class UndistortionPreProcessor:
         if len(self.device_to_profile.keys()) > 0:
 
             # 1. Find out list of devices
+            # TODO - uncomment this
             # list_of_devices = UndistortionPreProcessor.get_usb_devices()
 
             # TODO - remove this
@@ -498,6 +502,9 @@ class UndistortionPreProcessor:
             cur_pair_list = list(cur_pair_list_or_set)
             # TODO - should not comment out this
             # print(padding + UndistortionPreProcessor.get_usb_device(device_id=cur_device))
+
+            print(padding + cur_device)
+            
             for cur_pair in cur_pair_list:
                 print(padding + padding, counter, "=", cur_pair)
                 id_to_profile_pair[counter] = cur_pair
