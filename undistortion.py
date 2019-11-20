@@ -48,28 +48,20 @@ class Undistortion:
         self.crop = True
         self.imshow_size = cv2.WINDOW_NORMAL  # cv2.WINDOW_FULLSCREEN
         self.default_remap = False
-        # self.skip_undistort = False
+        self.skip_undistort = False
 
         self.initialize()
 
     def __call__(self, img):
-        # if not self.skip_undistort:
-        return self.calibrate_image(img)
-        # else:
-        #     return img
+        if not self.skip_undistort:
+            return self.calibrate_image(img)
+        else:
+            return img
 
     def initialize(self):
         """Initialize the needed info"""
 
-        #  TODO - remove 1. Init self.device_to_profile
-        # self.__init_profile_mapping()
-
-        # print("self.chessboard_folder_path", self.chessboard_folder_path)
-        # print("self.img_points_path", self.img_points_path)
-        # print("self.obj_points_path", self.obj_points_path)
-
         # 2. Init self.obj_points and self. img_points
-        # if self.chessboard_folder_path and os.path.exists(self.chessboard_folder_path):
         if self.chessboard_folder_path:
             print("Use input chessboard folder path:", self.chessboard_folder_path)
             self.img_points, self.obj_points = Undistortion.init_img_obj_points_from_chessboards(
@@ -79,15 +71,9 @@ class Undistortion:
                     and self.obj_points_path and os.path.exists(self.obj_points_path):
                 pass
             else:
-                # TODO - return false here
                 self.skip_undistort = True
                 print("No available profile. Skip undistortion.")
                 return False
-
-                # self.img_points_path, self.obj_points_path = self.__select_profile()
-                # if not self.img_points_path or not self.obj_points_path:
-                #     print("Failed to initialize profile path.")
-                #     return False
 
             print("Use img_points_path:", self.img_points_path)
             print("Use obj_points_path:", self.obj_points_path)
@@ -504,7 +490,7 @@ class UndistortionPreProcessor:
             # print(padding + UndistortionPreProcessor.get_usb_device(device_id=cur_device))
 
             print(padding + cur_device)
-            
+
             for cur_pair in cur_pair_list:
                 print(padding + padding, counter, "=", cur_pair)
                 id_to_profile_pair[counter] = cur_pair
