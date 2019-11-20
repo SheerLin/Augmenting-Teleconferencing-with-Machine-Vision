@@ -178,9 +178,9 @@ def configure_cap_device(device, width, height):
 @param height Desired height
 @return Void
 '''
-def process_video(cam_device, cap_device, width, height):
-    eng = engine.Engine(width, height)
-    
+def process_video(cam_device, cap_device, width, height, img_path="", obj_path="", do_undistort=False):
+    eng = engine.Engine(width, height, img_path, obj_path, do_undistort)
+
     while True:
         # try:
         ret, im = cam_device.read()
@@ -225,23 +225,29 @@ if __name__== "__main__":
         cap_device = get_cap_device(CAP_DEVICE_NUMBER, width, height)
     else:
         cap_device = None
-        
+
     if ENABLE_GUI:
         # TODO
         # Start GUI for these arguments
         # camera device, capture device, resolution, enable gui,
         # enable vcam, distortion profile, video path
         print("Use UI")
+        img_path = ""
+        obj_path = ""
+        do_undistort = False
+
     else:
         # TODO - refactor the code to initialize the profile path before processing video
         print("No UI")
-        # undistortion_preprocessor = undistortion.UndistortionPreProcessor(CAM_DEVICE_NUMBER)
-        # img_path, obj_path = undistortion_preprocessor()
+        undistortion_preprocessor = undistortion.UndistortionPreProcessor(CAM_DEVICE_NUMBER)
+        img_path, obj_path, do_undistort = undistortion_preprocessor()
+        print(img_path, obj_path)
+        print("do_undistort:",do_undistort)
 
 
     # processcap_device
-    process_video(cam_device, cap_device, width, height)
-    
+    process_video(cam_device, cap_device, width, height, img_path, obj_path, do_undistort)
+
     # clean up
     del(cam_device)
     if ENABLE_VIRTUAL_CAM:

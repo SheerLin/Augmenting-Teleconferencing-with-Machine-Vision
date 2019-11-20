@@ -14,13 +14,15 @@ BENCHMARK = True
 
 class Engine:
 
-    def __init__(self, width, height):
+    def __init__(self, width, height, img_path, obj_path, do_undistort):
         self.width = width
         self.height = height
-        # self.cam_device_number = cam_device_number
         self.frame_num = 0
         self.start_time = 0
         self.end_time = 0
+        self.img_path = img_path
+        self.obj_path = obj_path
+        self.do_undistort = do_undistort
         diag = int(math.sqrt(width**2 + height**2))
         self.extractor = extractor.Extractor({
             'width': self.width,
@@ -33,9 +35,14 @@ class Engine:
             'center': (self.width//2 - diag//40, self.height//5 * 2, diag//20, diag//20),
             'benchmark': BENCHMARK
         })
-        self.undistorter = undistortion.Undistortion(
-            # cam_device_number=self.cam_device_number
-        )
+
+        if self.do_undistort:
+            self.undistorter = undistortion.Undistortion(
+                img_points_path=self.img_path, obj_points_path=self.obj_path
+            )
+        else:
+            self.undistorter = None
+
         self.beautifier = beautifier.Beautifier({
 
         })
@@ -93,9 +100,10 @@ class Engine:
         
         # src, self.run_pre_sum = self.average(src, self.run_pre, self.run_pre_sum)
 
-        # src = self.undistorter(src).copy(order='C')
-        # cv2.imshow('undistorter', src)
-        
+        if self.do_undistort:
+            src = self.undistorter(src).copy(order='C')
+            cv2.imshow('undistorter', src)
+
         src = self.extractor(src, self.frame_num)
         # cv2.imshow('extractor', src)
 

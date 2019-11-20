@@ -31,37 +31,32 @@ none_profile_symbol = "n"
 #  3. If no profile path and no has chessboards images folder path, select from the existing profiles
 #  4. Undistort the image
 class Undistortion:
-    def __init__(self, chessboard_folder_path=None, img_points_path=None,obj_points_path=None, ):
+    def __init__(self, chessboard_folder_path=None, img_points_path=None, obj_points_path=None):
         # TODO[low] - Refactor the format of parameters
         self.img_points_path = img_points_path
         self.obj_points_path = obj_points_path
         self.chessboard_folder_path = chessboard_folder_path
-        # self.cam_device_number = cam_device_number
 
         # TO be initialized:
         # Arrays to store object points and image points from all the images.
         self.obj_points = []  # 3d point in real world space
         self.img_points = []  # 2d points in image plane.
-        # self.device_to_profile = dict()  # Profile for selecting profile: <device> -> [list of (img path,obj path)]
-        # self.device_name = None
 
         # debug
-        self.show_image = False
-        self.save_image = False
+        self.show_image = True
         self.both_way = False
         self.crop = True
         self.imshow_size = cv2.WINDOW_NORMAL  # cv2.WINDOW_FULLSCREEN
         self.default_remap = False
-        # self.find_all_device = False
-        self.skip_undistort = False
+        # self.skip_undistort = False
 
         self.initialize()
 
     def __call__(self, img):
-        if not self.skip_undistort:
-            return self.calibrate_image(img)
-        else:
-            return img
+        # if not self.skip_undistort:
+        return self.calibrate_image(img)
+        # else:
+        #     return img
 
     def initialize(self):
         """Initialize the needed info"""
@@ -283,7 +278,7 @@ class UndistortionPreProcessor:
         self.cam_device_number = cam_device_number
 
         # DEBUG
-        self.find_all_device = False
+        self.find_all_device = True
 
         self.__init_profile_mapping()
 
@@ -316,7 +311,7 @@ class UndistortionPreProcessor:
 
                     self.device_to_profile[current_device].append((current_img_path, current_obj_path))
 
-            print("After initialize self.device_to_profile:", self.device_to_profile)
+            # print("After initialize self.device_to_profile:", self.device_to_profile)
 
         return
 
@@ -332,12 +327,19 @@ class UndistortionPreProcessor:
             Path to obj points npy file (with post fix)
         """
         self.device_name = UndistortionPreProcessor.find_device_id_by_cam_device_number(self.cam_device_number)
+        # TODO - remove this
+        self.device_name = '05a3:9230'
+        do_undistort = True
+
         print("Current device:", self.device_name)
 
         if len(self.device_to_profile.keys()) > 0:
 
             # 1. Find out list of devices
-            list_of_devices = UndistortionPreProcessor.get_usb_devices()
+            # list_of_devices = UndistortionPreProcessor.get_usb_devices()
+
+            # TODO - remove this
+            list_of_devices = ['05a3:9230', '046d:0837']
 
             # 2. Iterate through the list and find if the current device has profile
             # print(list_of_devices)
@@ -374,7 +376,7 @@ class UndistortionPreProcessor:
                         print("Single profile pair found!!")
                         selected_img_path = str(list(the_pairs)[0][0])
                         selected_obj_path = str(list(the_pairs)[0][1])
-                        return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix
+                        return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix, do_undistort
 
             # 5. If there are multiple available profile pairs, let user select
             if not no_profile:
@@ -387,7 +389,7 @@ class UndistortionPreProcessor:
                         print("Valid Input:", int(user_selected), id_to_profile[int(user_selected)])
                         selected_img_path = str(id_to_profile[int(user_selected)][0])
                         selected_obj_path = str(id_to_profile[int(user_selected)][1])
-                        return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix
+                        return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix, do_undistort
 
                     # Enable default profiling
                     if str(user_selected).lower() == default_profile_symbol:
@@ -395,7 +397,7 @@ class UndistortionPreProcessor:
 
                     #  Enable skipping undistortion
                     elif str(user_selected).lower() == none_profile_symbol:
-                        self.skip_undistort = True
+                        do_undistort = False
                         print("Skipping undistortion!")
                         break
 
@@ -406,24 +408,24 @@ class UndistortionPreProcessor:
                 and os.path.isfile(default_img_points_path + npy_file_postfix) \
                 and default_obj_points_path \
                 and os.path.exists(default_obj_points_path + npy_file_postfix):
-            return default_img_points_path + npy_file_postfix, default_obj_points_path + npy_file_postfix
+            return default_img_points_path + npy_file_postfix, default_obj_points_path + npy_file_postfix, do_undistort
 
         else:
-            return False, False
+            return False, False, do_undistort
 
     @staticmethod
     def find_device_id_by_cam_device_number(cam_device_number):
         device_vendor_product = None
 
         # 1. Find the name of device: optional
-        name_path = "/sys/class/video4linux/video" + str(cam_device_number) + "/name"
-        if not os.path.exists(name_path):
-            print("Name file not exist:", name_path)
-            return device_vendor_product
-
-        with open(name_path, 'r') as f:
-            name = f.readline()
-            print("Name:", name)
+        # name_path = "/sys/class/video4linux/video" + str(cam_device_number) + "/name"
+        # if not os.path.exists(name_path):
+        #     print("Name file not exist:", name_path)
+        #     return device_vendor_product
+        #
+        # with open(name_path, 'r') as f:
+        #     name = f.readline()
+        #     print("Name:", name)
 
         # 2. Find the vendor id and product id of device
         driver_path = "/sys/class/video4linux/video" + str(cam_device_number) + "/device/input/"
@@ -494,7 +496,8 @@ class UndistortionPreProcessor:
                                                   "\"" + none_profile_symbol + "\" for not to undistort)")
         for cur_device, cur_pair_list_or_set in profile_map.items():
             cur_pair_list = list(cur_pair_list_or_set)
-            print(padding + UndistortionPreProcessor.get_usb_device(device_id=cur_device))
+            # TODO - should not comment out this
+            # print(padding + UndistortionPreProcessor.get_usb_device(device_id=cur_device))
             for cur_pair in cur_pair_list:
                 print(padding + padding, counter, "=", cur_pair)
                 id_to_profile_pair[counter] = cur_pair
