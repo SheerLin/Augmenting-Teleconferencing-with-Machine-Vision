@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QPalette, QColor, QCursor
 from PyQt5.QtCore import *
+import main
 
 NO_UNDISTORTION = "NO_UNDISTORTION"
 SELECT_CHESSBOARD_FOLDER = "SELECT_CHESSBOARD_FOLDER"
@@ -10,7 +11,7 @@ SELECT_ONE_PROFILE = "SELECT_ONE_PROFILE"
 
 class MainWindow(QWidget):
 
-    def __init__(self, profiles_map: dict):
+    def __init__(self, profiles_map: dict, cam_device, cap_device=None, frame_width=1920, frame_height=1080):
         super(MainWindow, self).__init__(flags=Qt.Widget)
         self.left = 10
         self.top = 10
@@ -19,10 +20,15 @@ class MainWindow(QWidget):
         self.profile_list_widget = list()
         self.selected_profile_pair = None
         self.layout = None
-        self.available_profiles_map = profiles_map  # Dictionary:<device> => set( (pair of img_path, obj_path) )
+        self.all_profiles_map = profiles_map  # Dictionary:<device> => set( (pair of img_path, obj_path) )
+        self.cam_device = cam_device
+        self.cap_device = cap_device
+        self.frame_width = frame_width
+        self.frame_height = frame_height
+        # TODO - self.do_undistortion
+        self.do_undistortion = True
 
         self.location_on_the_screen()
-
         self.set_buttons()
 
     def location_on_the_screen(self):
@@ -45,20 +51,32 @@ class MainWindow(QWidget):
         radiobutton = QRadioButton("Not to use undistortion feature")
         radiobutton.setChecked(True)
         radiobutton.status = NO_UNDISTORTION
-        self.add_button(layout, radiobutton)
+        self.add_level1_radio_button(layout, radiobutton)
 
         radiobutton = QRadioButton("Select a the folder for calibration pictures")
         radiobutton.status = SELECT_CHESSBOARD_FOLDER
-        self.add_button(layout, radiobutton)
+        self.add_level1_radio_button(layout, radiobutton)
 
         radiobutton = QRadioButton("Use Default profile")
         radiobutton.status = DEFAULT_PROFILE
-        self.add_button(layout, radiobutton)
+        self.add_level1_radio_button(layout, radiobutton)
 
         radiobutton = QRadioButton("Select a specific profile")
         radiobutton.status = SELECT_ONE_PROFILE
-        self.add_button(layout, radiobutton)
+        self.add_level1_radio_button(layout, radiobutton)
+        # TODO - sub-options:
+        #   1 - Display all profiles
+        #   2 - Display all profiles for the devices attached to current computer
+        #   3 - Display only the profiles for the camera that are currently in used
 
+        # Next button
+        next_button = QPushButton("Next")
+        # TODO - bug: not connected
+        next_button.toggled.connect(self.on_click_next)
+        next_button.setCursor(QCursor(Qt.PointingHandCursor))
+        layout.addWidget(next_button, alignment=Qt.AlignLeft)
+
+        # TODO(low) - can set this in self.construct_profile_layout()
         self.profile_list_widget = self.construct_profile_layout()
         self.layout = layout
 
@@ -74,7 +92,7 @@ class MainWindow(QWidget):
             for cur_profile_list_widget in self.profile_list_widget:
                 cur_profile_list_widget.setParent(None)
 
-    def add_button(self, layout: QWidget, button: QRadioButton):
+    def add_level1_radio_button(self, layout: QWidget, button: QRadioButton):
         button.toggled.connect(self.on_click_radio)
         button.setCursor(QCursor(Qt.PointingHandCursor))
         layout.addWidget(button, alignment=Qt.AlignLeft)
@@ -93,10 +111,17 @@ class MainWindow(QWidget):
                 selected_path = MainWindow.select_folder()
                 print("selected_path:", selected_path)
 
+    def on_click_next(self):
+        print("Selection Done. Run processing video")
+        img_path, obj_path = self.selected_profile_pair
+        main.process_video(cam_device=self.cam_device, cap_device=self.cap_device,
+                           width=self.frame_width, height=self.frame_height, img_path=img_path,
+                           obj_path=obj_path, do_undistort=self.do_undistortion)
+
     def construct_profile_layout(self):
         profile_list_widget = list()
 
-        for cur_device, cur_pair_est in self.available_profiles_map.items():
+        for cur_device, cur_pair_est in self.all_profiles_map.items():
             cur_box = QGroupBox(cur_device)
             layout = QVBoxLayout()
             # layout.addStretch(1)
@@ -106,7 +131,7 @@ class MainWindow(QWidget):
                 radio_button.pair = cur_par
                 radio_button.toggled.connect(self.on_select_pair)
                 radio_button.setChecked(False)
-                layout.addWidget(radio_button, alignment=Qt.AlignCenter)
+                layout.addWidget(radio_button, alignment=Qt.AlignLeft)
 
             cur_box.setLayout(layout)
 
@@ -122,7 +147,7 @@ class MainWindow(QWidget):
             return radio_button.pair
 
     def selecting_profiles(self):
-        print("In selecting_profiles:self.available_profiles_map:", self.available_profiles_map)
+        print("In selecting_profiles:self.available_profiles_map:", self.all_profiles_map)
         pass
 
     @staticmethod
@@ -156,7 +181,7 @@ class MainWindow(QWidget):
             e.ignore()
 
 
-def initialize_ui(cur_available_profiles_map: dict):
+def initialize_ui(all_profiles_map: dict, cam_device=None, cap_device=None, width=None, height=None):
     app = QApplication([])
 
     # Force the style to be the same on all OSs:
@@ -181,7 +206,7 @@ def initialize_ui(cur_available_profiles_map: dict):
 
     app.setApplicationName("Augmenting Teleconferencing")
 
-    window = MainWindow(cur_available_profiles_map)
+    window = MainWindow(all_profiles_map, cam_device, cap_device, width, height)
     window.show()
 
     app.exec_()
