@@ -82,6 +82,7 @@ sudo pip install numpy
 sudo pip install python-opencv
 sudo pip install v4l2
 sudo pip install inotify
+sudo pip install pyqt5
 ```
 
 Patch v4l2 for Python 3:

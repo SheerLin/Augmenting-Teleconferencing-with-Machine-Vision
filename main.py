@@ -44,9 +44,11 @@ def parse_args(args):
 def get_resolution(res):
     if res == 1080:
         width, height = 1920, 1080
-    if res == 720:
+    elif res == 720:
         width, height = 1280, 720
-    if res == 600:
+    elif res == 768:
+        width, height = 1024, 768
+    elif res == 600:
         width, height = 800, 600
     else: # 480p
         width, height = 640, 480
@@ -74,6 +76,7 @@ def get_cam_device(dev_number, width, height):
         print("Exception in opening device", dev_number)
         print(e)
         exit()
+    print("Old Width: {}, Height: {}".format(width, height))
     height = im.shape[0]
     width = im.shape[1]
     print("Cam Device: ", dev_number)
@@ -216,12 +219,13 @@ if __name__== "__main__":
     
     # set up
     width, height = get_resolution(RESOLUTION)
-    # cam_device, width, height = get_cam_device(CAM_DEVICE_NUMBER, width, height)
+    print(RESOLUTION, width, height)
+    cam_device, width, height = get_cam_device(CAM_DEVICE_NUMBER, width, height)
     # cam_device, width, height = get_cam_device_from_video('data/wb_mengmeng.mov')
     # cam_device, width, height = get_cam_device_from_video('data/AccessMath_lecture_01_part_3.mp4')
     # cam_device, width, height = get_cam_device_from_video('raw-data/Piotr-wb.mov')
     # cam_device, width, height = get_cam_device_from_video('raw-data/classroom-wb.mov')
-    cam_device, width, height = get_cam_device_from_video('data/final1.webm')
+    # cam_device, width, height = get_cam_device_from_video('data/final4.webm')
     if ENABLE_VIRTUAL_CAM:
         cap_device = get_cap_device(CAP_DEVICE_NUMBER, width, height)
     else:
@@ -251,12 +255,15 @@ if __name__== "__main__":
     else:
         # TODO - Should also accept chessboard path as parameter
 
-        undistortion_preprocessor = undistortion.UndistortionPreProcessor(CAM_DEVICE_NUMBER)
-        undistortion_preprocessor.init_profile_mapping()
-        img_path, obj_path, do_undistort = undistortion_preprocessor()
+        # undistortion_preprocessor = undistortion.UndistortionPreProcessor(CAM_DEVICE_NUMBER)
+        # undistortion_preprocessor.init_profile_mapping()
+        # img_path, obj_path, do_undistort = undistortion_preprocessor()
         # print(img_path, obj_path)
         # print("do_undistort:",do_undistort)
 
+        do_undistort = True
+        img_path = "undistort/profiles/original4_img.npy"
+        obj_path = "undistort/profiles/original4_obj.npy"    
 
     # processcap_device
     process_video(cam_device, cap_device, width, height, img_path, obj_path, do_undistort)

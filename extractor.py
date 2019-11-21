@@ -81,7 +81,7 @@ class Extractor:
         # Convert to edges
         src = src_filter
         src_thresh = cv2.adaptiveThreshold(src, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 3, 7)
-        # cv2.imshow('Thresh', src_thresh)
+        cv2.imshow('Thresh', src_thresh)
 
         # Erosion followed by Dilation (Opening Morph)
         # Connect breaks caused by noise
