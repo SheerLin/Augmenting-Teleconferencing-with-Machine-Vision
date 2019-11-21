@@ -256,18 +256,18 @@ if __name__== "__main__":
     else:
         # TODO - Should also accept chessboard path as parameter
 
-        # undistortion_preprocessor = undistortion.UndistortionPreProcessor(CAM_DEVICE_NUMBER)
-        # undistortion_preprocessor.init_profile_mapping()
-        # img_path, obj_path, do_undistort = undistortion_preprocessor()
+        undistortion_preprocessor = undistortion.UndistortionPreProcessor(CAM_DEVICE_NUMBER)
+        undistortion_preprocessor.init_profile_mapping()
+        img_path, obj_path, do_undistort = undistortion_preprocessor()
         # print(img_path, obj_path)
         # print("do_undistort:",do_undistort)
 
-        do_undistort = True
-        img_path = "undistort/profiles/original4_img.npy"
-        obj_path = "undistort/profiles/original4_obj.npy"    
+        # do_undistort = True
+        # img_path = "undistort/profiles/original4_img.npy"
+        # obj_path = "undistort/profiles/original4_obj.npy"
 
-    # processcap_device
-    process_video(cam_device, cap_device, width, height, img_path, obj_path, do_undistort)
+        # process cap_device
+        process_video(cam_device, cap_device, width, height, img_path, obj_path, do_undistort)
 
     # clean up
     del(cam_device)

@@ -510,6 +510,10 @@ class UndistortionPreProcessor:
             return usb_devices[0]
 
 
+def get_default_profile_pair():
+    return (default_img_points_path, default_obj_points_path)
+
+
 def parse_args(args):
     if len(args) < 5:
         usage()

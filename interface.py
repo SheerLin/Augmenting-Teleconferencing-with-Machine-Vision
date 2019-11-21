@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QPalette, QColor, QCursor
 from PyQt5.QtCore import *
 import main
+import undistortion
 
 NO_UNDISTORTION = "NO_UNDISTORTION"
 SELECT_CHESSBOARD_FOLDER = "SELECT_CHESSBOARD_FOLDER"
@@ -25,8 +26,7 @@ class MainWindow(QWidget):
         self.cap_device = cap_device
         self.frame_width = frame_width
         self.frame_height = frame_height
-        # TODO - self.do_undistortion
-        self.do_undistortion = True
+        self.do_undistortion = False
 
         self.location_on_the_screen()
         self.set_buttons()
@@ -71,8 +71,7 @@ class MainWindow(QWidget):
 
         # Next button
         next_button = QPushButton("Next")
-        # TODO - bug: not connected
-        next_button.toggled.connect(self.on_click_next)
+        next_button.clicked.connect(self.on_click_next)
         next_button.setCursor(QCursor(Qt.PointingHandCursor))
         layout.addWidget(next_button, alignment=Qt.AlignLeft)
 
@@ -107,9 +106,17 @@ class MainWindow(QWidget):
             else:
                 self.delete_profile_list_widget()
 
-            if radio_button.status == SELECT_CHESSBOARD_FOLDER:
-                selected_path = MainWindow.select_folder()
-                print("selected_path:", selected_path)
+                if radio_button.status == SELECT_CHESSBOARD_FOLDER:
+                    selected_path = MainWindow.select_folder()
+                    print("selected_path:", selected_path)
+                elif radio_button.status == DEFAULT_PROFILE:
+                    self.selected_profile_pair = undistortion.get_default_profile_pair()
+                    print("Select default profile:", self.selected_profile_pair)
+
+            if radio_button.status == NO_UNDISTORTION:
+                self.do_undistortion = False
+            else:
+                self.do_undistortion = True
 
     def on_click_next(self):
         print("Selection Done. Run processing video")
