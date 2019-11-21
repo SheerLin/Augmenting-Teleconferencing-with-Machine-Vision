@@ -236,8 +236,10 @@ if __name__== "__main__":
 
         undistortion_preprocessor = undistortion.UndistortionPreProcessor(CAM_DEVICE_NUMBER)
         device_to_profile = undistortion_preprocessor.init_profile_mapping()
-        print("device_to_profile:",device_to_profile)
-        interface.initialize_ui(device_to_profile)
+        print("device_to_profile:", device_to_profile)
+
+        # Should run process_video during the lifetime of user interface
+        interface.initialize_ui(device_to_profile,cam_device, cap_device, width, height)
 
         print("Use UI")
         img_path = ""
@@ -245,21 +247,18 @@ if __name__== "__main__":
         chessboard_path = ""
         do_undistort = False
 
-        print("Not implemented")
-        exit(0)
+        pass
 
     else:
         # TODO - Should also accept chessboard path as parameter
-
         undistortion_preprocessor = undistortion.UndistortionPreProcessor(CAM_DEVICE_NUMBER)
         undistortion_preprocessor.init_profile_mapping()
         img_path, obj_path, do_undistort = undistortion_preprocessor()
         # print(img_path, obj_path)
         # print("do_undistort:",do_undistort)
 
-
-    # processcap_device
-    process_video(cam_device, cap_device, width, height, img_path, obj_path, do_undistort)
+        # process cap_device
+        process_video(cam_device, cap_device, width, height, img_path, obj_path, do_undistort)
 
     # clean up
     del(cam_device)
