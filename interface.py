@@ -6,10 +6,17 @@ import undistortion
 import os
 import subprocess
 
+# Options for profile selection
 NO_UNDISTORTION = "NO_UNDISTORTION"
-SELECT_CHESSBOARD_FOLDER = "SELECT_CHESSBOARD_FOLDER"
+# TODO - deprecate chessboard folder
+# SELECT_CHESSBOARD_FOLDER = "SELECT_CHESSBOARD_FOLDER"
 DEFAULT_PROFILE = "DEFAULT_PROFILE"
 SELECT_ONE_PROFILE = "SELECT_ONE_PROFILE"
+
+# Options for profile displayed in SELECT_ONE_PROFILE
+ALL_PROFILES = "ALL_PROFILES"
+PROFILES_ALL_ATTACHED_CAM = "PROFILES_ALL_ATTACHED_CAM"
+PROFILES_CUR_CAM_ONLY = "PROFILES_CUR_CAM_ONLY"
 
 
 class MainWindow(QWidget):
@@ -77,15 +84,10 @@ class MainWindow(QWidget):
         radiobutton = QRadioButton("Select a specific profile")
         radiobutton.status = SELECT_ONE_PROFILE
         self.add_level1_radio_button(self.layout, radiobutton)
-        # TODO - sub-options:
-        #   1 - Display all profiles
-        #   2 - Display all profiles for the devices attached to current computer
-        #   3 - Display only the profiles for the camera that are currently in used
 
         MainWindow.add_list_widget(self.list_widget, self.layout)
 
-        # TODO(low) - can set this in self.construct_profile_layout()
-        self.profile_list_widget = self.construct_profile_layout()
+        self.construct_profile_layout()
         self.auto_resize()
 
     def add_run_button(self):
@@ -130,10 +132,12 @@ class MainWindow(QWidget):
             else:
                 MainWindow.delete_list_widget(self.profile_list_widget)
 
-                if radio_button.status == SELECT_CHESSBOARD_FOLDER:
-                    selected_path = MainWindow.select_folder()
-                    print("selected_path:", selected_path)
-                elif radio_button.status == DEFAULT_PROFILE:
+                # TODO - deprecate chessboard folder
+                # if radio_button.status == SELECT_CHESSBOARD_FOLDER:
+                #     selected_path = MainWindow.select_folder()
+                #     print("selected_path:", selected_path)
+
+                if radio_button.status == DEFAULT_PROFILE:
                     self.selected_profile_pair = undistortion.get_default_profile_pair()
                     print("Select default profile:", self.selected_profile_pair)
 
@@ -170,25 +174,31 @@ class MainWindow(QWidget):
             self.add_rerun_button()
             self.auto_resize()
 
-    def construct_profile_layout(self):
-        profile_list_widget = list()
+    def add_profile_sub_option(self):
+        # TODO - sub-options:
+        #   1 - Display all profiles
+        #   2 - Display all profiles for the devices attached to current computer
+        #   3 - Display only the profiles for the camera that are currently in used
+        sub_button_group = QGroupBox()
+        pass
 
-        for cur_device, cur_pair_est in self.all_profiles_map.items():
-            cur_box = QGroupBox(cur_device)
-            layout = QVBoxLayout()
+    def construct_profile_layout(self, flag=ALL_PROFILES):
+        if not self.profile_list_widget:
+            self.profile_list_widget = list()
+            for cur_device, cur_pair_est in self.all_profiles_map.items():
+                cur_box = QGroupBox(cur_device)
+                layout = QVBoxLayout()
 
-            for cur_par in cur_pair_est:
-                radio_button = QRadioButton(str(cur_par))
-                radio_button.pair = cur_par
-                radio_button.toggled.connect(self.on_select_pair)
-                radio_button.setChecked(False)
-                layout.addWidget(radio_button, alignment=Qt.AlignLeft)
+                for cur_par in cur_pair_est:
+                    radio_button = QRadioButton(str(cur_par))
+                    radio_button.pair = cur_par
+                    radio_button.toggled.connect(self.on_select_pair)
+                    radio_button.setChecked(False)
+                    layout.addWidget(radio_button, alignment=Qt.AlignLeft)
 
-            cur_box.setLayout(layout)
+                cur_box.setLayout(layout)
 
-            profile_list_widget.append(cur_box)
-
-        return profile_list_widget
+                self.profile_list_widget.append(cur_box)
 
     def on_select_pair(self):
         radio_button = self.sender()
@@ -197,6 +207,7 @@ class MainWindow(QWidget):
             self.selected_profile_pair = radio_button.pair
             return radio_button.pair
 
+    # TODO: might not need this
     def selecting_profiles(self):
         print("In selecting_profiles:self.available_profiles_map:", self.all_profiles_map)
         pass

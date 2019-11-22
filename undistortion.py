@@ -31,7 +31,7 @@ none_profile_symbol = "n"
 #  3. If no profile path and no has chessboards images folder path, select from the existing profiles
 #  4. Undistort the image
 class Undistortion:
-    # TODO - deprecate self.chessboard_folder_path
+    # TODO[low] - deprecate self.chessboard_folder_path
     # def __init__(self, chessboard_folder_path=None, img_points_path=None, obj_points_path=None):
     def __init__(self,  img_points_path=None, obj_points_path=None):
         # TODO[low] - Refactor the format of parameters
@@ -63,7 +63,7 @@ class Undistortion:
     def initialize(self):
         """Initialize the needed info"""
 
-        # TODO - deprecate self.chessboard_folder_path
+        # TODO[low] - deprecate self.chessboard_folder_path
         # if self.chessboard_folder_path:
         #     print("Use input chessboard folder path:", self.chessboard_folder_path)
         #     self.img_points, self.obj_points = Undistortion.init_img_obj_points_from_chessboards(
@@ -315,11 +315,11 @@ class UndistortionPreProcessor:
             Path to img points npy file (with post fix)
             Path to obj points npy file (with post fix)
         """
-        # TODO - uncomment this
-        # self.device_name = UndistortionPreProcessor.find_device_id_by_cam_device_number(self.cam_device_number)
+        # TODO[fusion]  - uncomment this
+        self.device_name = UndistortionPreProcessor.find_device_id_by_cam_device_number(self.cam_device_number)
 
-        # TODO - remove this
-        self.device_name = '05a3:9230'
+        # TODO[fusion]  - remove this
+        # self.device_name = '05a3:9230'
 
         do_undistort = True
 
@@ -328,11 +328,11 @@ class UndistortionPreProcessor:
         if len(self.device_to_profile.keys()) > 0:
 
             # 1. Find out list of devices
-            # TODO - uncomment this
-            # list_of_devices = UndistortionPreProcessor.get_usb_devices()
+            # TODO[fusion]  - uncomment this
+            list_of_devices = UndistortionPreProcessor.get_usb_devices()
 
-            # TODO - remove this
-            list_of_devices = ['05a3:9230', '046d:0837']
+            # TODO[fusion]  - remove this
+            # list_of_devices = ['05a3:9230', '046d:0837']
 
             # 2. Iterate through the list and find if the current device has profile
             # print(list_of_devices)
@@ -489,10 +489,11 @@ class UndistortionPreProcessor:
                                                   "\"" + none_profile_symbol + "\" for not to undistort)")
         for cur_device, cur_pair_list_or_set in profile_map.items():
             cur_pair_list = list(cur_pair_list_or_set)
-            # TODO - should not comment out this
-            # print(padding + UndistortionPreProcessor.get_usb_device(device_id=cur_device))
+            # TODO[fusion] - uncomment this
+            print(padding + UndistortionPreProcessor.get_usb_device(device_id=cur_device))
 
-            print(padding + cur_device)
+            # TODO[fusion]  - remove this
+            # print(padding + cur_device)
 
             for cur_pair in cur_pair_list:
                 print(padding + padding, counter, "=", cur_pair)
