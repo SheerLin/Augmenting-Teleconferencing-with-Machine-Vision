@@ -237,21 +237,14 @@ if __name__== "__main__":
         # Start GUI for these arguments
         # camera device, capture device, resolution, enable gui,
         # enable vcam, distortion profile, video path
+        print("Use UI")
 
         undistortion_preprocessor = undistortion.UndistortionPreProcessor(CAM_DEVICE_NUMBER)
         device_to_profile = undistortion_preprocessor.init_profile_mapping()
-        print("device_to_profile:", device_to_profile)
+        # print("device_to_profile:", device_to_profile)
 
-        # Should run process_video during the lifetime of user interface
-        interface.initialize_ui(device_to_profile,cam_device, cap_device, width, height)
-
-        print("Use UI")
-        img_path = ""
-        obj_path = ""
-        chessboard_path = ""
-        do_undistort = False
-
-        pass
+        # Will run process_video during the lifetime of user interface
+        interface.initialize_ui(device_to_profile, cam_device, cap_device, width, height)
 
     else:
         # TODO - Should also accept chessboard path as parameter

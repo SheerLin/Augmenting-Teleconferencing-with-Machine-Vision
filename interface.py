@@ -4,7 +4,6 @@ from PyQt5.QtCore import *
 import main
 import undistortion
 import os
-import signal
 import subprocess
 
 NO_UNDISTORTION = "NO_UNDISTORTION"
@@ -19,8 +18,7 @@ class MainWindow(QWidget):
         super(MainWindow, self).__init__(flags=Qt.Widget)
         self.left = 10
         self.top = 10
-        self.width = 600
-        self.height = 300
+        self.width = 639
         self.profile_list_widget = list()
         self.selected_profile_pair = None
         self.layout = None
@@ -36,7 +34,9 @@ class MainWindow(QWidget):
         self.set_buttons()
 
     def location_on_the_screen(self):
-        self.setGeometry(self.left, self.top, self.width, self.height)
+        self.resize(self.width, self.sizeHint().height())
+
+        # self.setGeometry(self.left, self.top, self.width, self.height)
 
         # TODO - put in middle of the screen
         # ag = QDesktopWidget().availableGeometry()
@@ -57,9 +57,9 @@ class MainWindow(QWidget):
         radiobutton.status = NO_UNDISTORTION
         self.add_level1_radio_button(layout, radiobutton)
 
-        radiobutton = QRadioButton("Select a the folder for calibration pictures")
-        radiobutton.status = SELECT_CHESSBOARD_FOLDER
-        self.add_level1_radio_button(layout, radiobutton)
+        # radiobutton = QRadioButton("Select a the folder for calibration pictures")
+        # radiobutton.status = SELECT_CHESSBOARD_FOLDER
+        # self.add_level1_radio_button(layout, radiobutton)
 
         radiobutton = QRadioButton("Use Default profile")
         radiobutton.status = DEFAULT_PROFILE
@@ -122,6 +122,10 @@ class MainWindow(QWidget):
             else:
                 self.do_undistortion = True
 
+            self.resize(self.width, self.sizeHint().height())
+
+        self.setMaximumHeight(self.sizeHint().height())
+
     def on_click_next(self):
         img_path = None
         obj_path = None
@@ -143,7 +147,6 @@ class MainWindow(QWidget):
         for cur_device, cur_pair_est in self.all_profiles_map.items():
             cur_box = QGroupBox(cur_device)
             layout = QVBoxLayout()
-            # layout.addStretch(1)
 
             for cur_par in cur_pair_est:
                 radio_button = QRadioButton(str(cur_par))
