@@ -3,6 +3,9 @@ from PyQt5.QtGui import QPalette, QColor, QCursor
 from PyQt5.QtCore import *
 import main
 import undistortion
+import os
+import signal
+import subprocess
 
 NO_UNDISTORTION = "NO_UNDISTORTION"
 SELECT_CHESSBOARD_FOLDER = "SELECT_CHESSBOARD_FOLDER"
@@ -27,6 +30,7 @@ class MainWindow(QWidget):
         self.frame_width = frame_width
         self.frame_height = frame_height
         self.do_undistortion = False
+        self.child_pid = -1
 
         self.location_on_the_screen()
         self.set_buttons()
@@ -119,12 +123,19 @@ class MainWindow(QWidget):
                 self.do_undistortion = True
 
     def on_click_next(self):
-        print("Selection Done. Run processing video")
-        # TODO - BUG: not able to terminate this process even if closing the ui - use subprocess
-        img_path, obj_path = self.selected_profile_pair
-        main.process_video(cam_device=self.cam_device, cap_device=self.cap_device,
-                           width=self.frame_width, height=self.frame_height, img_path=img_path,
-                           obj_path=obj_path, do_undistort=self.do_undistortion)
+        img_path = None
+        obj_path = None
+        if self.selected_profile_pair:
+            img_path, obj_path = self.selected_profile_pair
+
+        self.child_pid = os.fork()
+        if self.child_pid == 0:
+            print("In child process, run main.process_video")
+            main.process_video(cam_device=self.cam_device, cap_device=self.cap_device,
+                               width=self.frame_width, height=self.frame_height, img_path=img_path,
+                               obj_path=obj_path, do_undistort=self.do_undistortion)
+        else:
+            print("In main process:self.child_pid=", self.child_pid)
 
     def construct_profile_layout(self):
         profile_list_widget = list()
@@ -187,6 +198,16 @@ class MainWindow(QWidget):
 
         if reply & QMessageBox.Cancel:
             e.ignore()
+        else:
+            e.accept()
+            if self.child_pid:
+                kill_main(self.child_pid)
+
+
+def kill_main(pid):
+    if pid:
+        kill_command = ["kill", "-9", str(pid)]
+        subprocess.Popen(kill_command)
 
 
 def initialize_ui(all_profiles_map: dict, cam_device=None, cap_device=None, width=None, height=None):
