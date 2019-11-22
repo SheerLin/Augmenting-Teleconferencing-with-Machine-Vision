@@ -31,11 +31,13 @@ none_profile_symbol = "n"
 #  3. If no profile path and no has chessboards images folder path, select from the existing profiles
 #  4. Undistort the image
 class Undistortion:
-    def __init__(self, chessboard_folder_path=None, img_points_path=None, obj_points_path=None):
+    # TODO - deprecate self.chessboard_folder_path
+    # def __init__(self, chessboard_folder_path=None, img_points_path=None, obj_points_path=None):
+    def __init__(self,  img_points_path=None, obj_points_path=None):
         # TODO[low] - Refactor the format of parameters
         self.img_points_path = img_points_path
         self.obj_points_path = obj_points_path
-        self.chessboard_folder_path = chessboard_folder_path
+        # self.chessboard_folder_path = chessboard_folder_path
 
         # TO be initialized:
         # Arrays to store object points and image points from all the images.
@@ -61,24 +63,26 @@ class Undistortion:
     def initialize(self):
         """Initialize the needed info"""
 
-        # 2. Init self.obj_points and self. img_points
-        if self.chessboard_folder_path:
-            print("Use input chessboard folder path:", self.chessboard_folder_path)
-            self.img_points, self.obj_points = Undistortion.init_img_obj_points_from_chessboards(
-                self.chessboard_folder_path)
+        # TODO - deprecate self.chessboard_folder_path
+        # if self.chessboard_folder_path:
+        #     print("Use input chessboard folder path:", self.chessboard_folder_path)
+        #     self.img_points, self.obj_points = Undistortion.init_img_obj_points_from_chessboards(
+        #         self.chessboard_folder_path)
+        # else:
+
+        # Init self.obj_points and self. img_points
+        if self.img_points_path and os.path.isfile(self.img_points_path) \
+                and self.obj_points_path and os.path.exists(self.obj_points_path):
+            pass
         else:
-            if self.img_points_path and os.path.isfile(self.img_points_path) \
-                    and self.obj_points_path and os.path.exists(self.obj_points_path):
-                pass
-            else:
-                self.skip_undistort = True
-                print("No available profile. Skip undistortion.")
-                return False
+            self.skip_undistort = True
+            print("No available profile. Skip undistortion.")
+            return False
 
-            print("Use img_points_path:", self.img_points_path)
-            print("Use obj_points_path:", self.obj_points_path)
+        print("Use img_points_path:", self.img_points_path)
+        print("Use obj_points_path:", self.obj_points_path)
 
-            self.img_points, self.obj_points = Undistortion.deserialize(self.img_points_path, self.obj_points_path)
+        self.img_points, self.obj_points = Undistortion.deserialize(self.img_points_path, self.obj_points_path)
 
     @staticmethod
     def init_img_obj_points_from_chessboards(init_chessboard_path):

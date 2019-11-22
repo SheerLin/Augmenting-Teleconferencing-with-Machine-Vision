@@ -235,7 +235,7 @@ if __name__== "__main__":
     if ENABLE_GUI:
         # TODO
         # Start GUI for these arguments
-        # camera device, capture device, resolution, enable gui,
+        # camera device, capture device, resolution,
         # enable vcam, distortion profile, video path
         print("Use UI")
 
@@ -247,8 +247,6 @@ if __name__== "__main__":
         interface.initialize_ui(device_to_profile, cam_device, cap_device, width, height)
 
     else:
-        # TODO - Should also accept chessboard path as parameter
-
         undistortion_preprocessor = undistortion.UndistortionPreProcessor(CAM_DEVICE_NUMBER)
         undistortion_preprocessor.init_profile_mapping()
         img_path, obj_path, do_undistort = undistortion_preprocessor()
