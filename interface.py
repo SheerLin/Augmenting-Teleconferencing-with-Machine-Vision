@@ -39,7 +39,7 @@ class MainWindow(QWidget):
 
         # self.setGeometry(self.left, self.top, self.width, self.height)
 
-        # TODO - put in middle of the screen
+        # TODO(low) - put in middle of the screen
         # ag = QDesktopWidget().availableGeometry()
         # sg = QDesktopWidget().screenGeometry()
         #
@@ -156,12 +156,15 @@ class MainWindow(QWidget):
 
         self.child_pid = os.fork()
         if self.child_pid == 0:
-            # print("In child process, run main.process_video")
-            main.process_video(cam_device=self.cam_device, cap_device=self.cap_device,
-                               width=self.frame_width, height=self.frame_height, img_path=img_path,
-                               obj_path=obj_path, do_undistort=self.do_undistortion)
+            try:
+                main.process_video(cam_device=self.cam_device, cap_device=self.cap_device,
+                                   width=self.frame_width, height=self.frame_height, img_path=img_path,
+                                   obj_path=obj_path, do_undistort=self.do_undistortion)
+            except Exception as e:
+                self.kill_main_process_video()
+                print("Exception when processing frame!!! See below exception:")
+                print(e)
         else:
-            # print("In main process:self.child_pid=", self.child_pid)
             MainWindow.delete_list_widget(self.list_widget)
             MainWindow.delete_list_widget(self.profile_list_widget)
             self.add_rerun_button()
