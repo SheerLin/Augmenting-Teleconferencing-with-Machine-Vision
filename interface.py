@@ -157,6 +157,8 @@ class MainWindow(QWidget):
         obj_path = None
         if self.selected_profile_pair:
             img_path, obj_path = self.selected_profile_pair
+            img_path += undistortion.npy_file_postfix
+            obj_path += undistortion.npy_file_postfix
 
         self.child_pid = os.fork()
         if self.child_pid == 0:
