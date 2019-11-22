@@ -19,6 +19,7 @@ class MainWindow(QWidget):
         self.left = 10
         self.top = 10
         self.width = 639
+        self.list_widget = None
         self.profile_list_widget = list()
         self.selected_profile_pair = None
         self.layout = None
@@ -31,7 +32,7 @@ class MainWindow(QWidget):
         self.child_pid = -1
 
         self.location_on_the_screen()
-        self.set_buttons()
+        self.init_interface()
 
     def location_on_the_screen(self):
         self.resize(self.width, self.sizeHint().height())
@@ -48,14 +49,22 @@ class MainWindow(QWidget):
         # self.move(x, y)
         pass
 
-    def set_buttons(self):
-        layout = QVBoxLayout()
-        self.setLayout(layout)
+    def init_interface(self):
+        if not self.layout:
+            self.layout = QVBoxLayout()
+            self.setLayout(self.layout)
 
+        MainWindow.delete_list_widget(self.list_widget)
+        self.list_widget = list()
+
+        # Add Run button
+        self.add_run_button()
+
+        # Add radio buttons for profile selection
         radiobutton = QRadioButton("Not to use undistortion feature")
         radiobutton.setChecked(True)
         radiobutton.status = NO_UNDISTORTION
-        self.add_level1_radio_button(layout, radiobutton)
+        self.add_level1_radio_button(self.layout, radiobutton)
 
         # radiobutton = QRadioButton("Select a the folder for calibration pictures")
         # radiobutton.status = SELECT_CHESSBOARD_FOLDER
@@ -63,52 +72,63 @@ class MainWindow(QWidget):
 
         radiobutton = QRadioButton("Use Default profile")
         radiobutton.status = DEFAULT_PROFILE
-        self.add_level1_radio_button(layout, radiobutton)
+        self.add_level1_radio_button(self.layout, radiobutton)
 
         radiobutton = QRadioButton("Select a specific profile")
         radiobutton.status = SELECT_ONE_PROFILE
-        self.add_level1_radio_button(layout, radiobutton)
+        self.add_level1_radio_button(self.layout, radiobutton)
         # TODO - sub-options:
         #   1 - Display all profiles
         #   2 - Display all profiles for the devices attached to current computer
         #   3 - Display only the profiles for the camera that are currently in used
 
-        # Next button
-        next_button = QPushButton("Next")
-        next_button.clicked.connect(self.on_click_next)
-        next_button.setCursor(QCursor(Qt.PointingHandCursor))
-        layout.addWidget(next_button, alignment=Qt.AlignLeft)
+        MainWindow.add_list_widget(self.list_widget, self.layout)
 
         # TODO(low) - can set this in self.construct_profile_layout()
         self.profile_list_widget = self.construct_profile_layout()
-        self.layout = layout
+        self.auto_resize()
 
-    def add_profile_list_widget(self):
-        if self.profile_list_widget and len(self.profile_list_widget) > 0:
-            print("Add boxes")
-            for cur_profile_list_widget in self.profile_list_widget:
-                self.layout.addWidget(cur_profile_list_widget, alignment=Qt.AlignLeft)
+    def add_run_button(self):
+        run_button = QPushButton("Run")
+        run_button.clicked.connect(self.on_click_next)
+        run_button.setCursor(QCursor(Qt.PointingHandCursor))
+        self.list_widget.append(run_button)
 
-    def delete_profile_list_widget(self):
-        if self.profile_list_widget and len(self.profile_list_widget) > 0:
-            print("Remove boxes")
-            for cur_profile_list_widget in self.profile_list_widget:
+    def add_rerun_button(self):
+        self.list_widget = list()
+        rerun_button = QPushButton("Rerun")
+        rerun_button.clicked.connect(self.kill_main_process_video)
+        rerun_button.clicked.connect(self.init_interface)
+        rerun_button.setCursor(QCursor(Qt.PointingHandCursor))
+        self.list_widget.append(rerun_button)
+        MainWindow.add_list_widget(self.list_widget, self.layout)
+
+    @staticmethod
+    def add_list_widget(list_widget, layout):
+        if list_widget and len(list_widget) > 0:
+            for cur_profile_list_widget in list_widget:
+                layout.addWidget(cur_profile_list_widget, alignment=Qt.AlignLeft)
+
+    @staticmethod
+    def delete_list_widget(list_widget):
+        if list_widget and len(list_widget) > 0:
+            for cur_profile_list_widget in list_widget:
                 cur_profile_list_widget.setParent(None)
 
     def add_level1_radio_button(self, layout: QWidget, button: QRadioButton):
         button.toggled.connect(self.on_click_radio)
         button.setCursor(QCursor(Qt.PointingHandCursor))
-        layout.addWidget(button, alignment=Qt.AlignLeft)
+        self.list_widget.append(button)
 
     def on_click_radio(self):
         radio_button = self.sender()
         if radio_button.isChecked():
-            print("Status is :%s" % radio_button.status)
+            # print("Status is :%s" % radio_button.status)
 
             if radio_button.status == SELECT_ONE_PROFILE:
-                self.add_profile_list_widget()
+                MainWindow.add_list_widget(self.profile_list_widget, self.layout)
             else:
-                self.delete_profile_list_widget()
+                MainWindow.delete_list_widget(self.profile_list_widget)
 
                 if radio_button.status == SELECT_CHESSBOARD_FOLDER:
                     selected_path = MainWindow.select_folder()
@@ -122,8 +142,10 @@ class MainWindow(QWidget):
             else:
                 self.do_undistortion = True
 
-            self.resize(self.width, self.sizeHint().height())
+        self.auto_resize()
 
+    def auto_resize(self):
+        self.resize(self.width, self.sizeHint().height())
         self.setMaximumHeight(self.sizeHint().height())
 
     def on_click_next(self):
@@ -134,12 +156,16 @@ class MainWindow(QWidget):
 
         self.child_pid = os.fork()
         if self.child_pid == 0:
-            print("In child process, run main.process_video")
+            # print("In child process, run main.process_video")
             main.process_video(cam_device=self.cam_device, cap_device=self.cap_device,
                                width=self.frame_width, height=self.frame_height, img_path=img_path,
                                obj_path=obj_path, do_undistort=self.do_undistortion)
         else:
-            print("In main process:self.child_pid=", self.child_pid)
+            # print("In main process:self.child_pid=", self.child_pid)
+            MainWindow.delete_list_widget(self.list_widget)
+            MainWindow.delete_list_widget(self.profile_list_widget)
+            self.add_rerun_button()
+            self.auto_resize()
 
     def construct_profile_layout(self):
         profile_list_widget = list()
@@ -203,8 +229,11 @@ class MainWindow(QWidget):
             e.ignore()
         else:
             e.accept()
-            if self.child_pid:
-                kill_main(self.child_pid)
+            self.kill_main_process_video()
+
+    def kill_main_process_video(self):
+        if self.child_pid:
+            kill_main(self.child_pid)
 
 
 def kill_main(pid):
