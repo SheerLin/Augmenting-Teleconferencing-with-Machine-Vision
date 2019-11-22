@@ -120,6 +120,7 @@ class MainWindow(QWidget):
 
     def on_click_next(self):
         print("Selection Done. Run processing video")
+        # TODO - BUG: not able to terminate this process even if closing the ui - use subprocess
         img_path, obj_path = self.selected_profile_pair
         main.process_video(cam_device=self.cam_device, cap_device=self.cap_device,
                            width=self.frame_width, height=self.frame_height, img_path=img_path,
