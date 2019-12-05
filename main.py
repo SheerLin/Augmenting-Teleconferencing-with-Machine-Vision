@@ -15,7 +15,7 @@ CAP_DEVICE_NUMBER = 2 # output device
 RESOLUTION = 1080
 
 ENABLE_VIRTUAL_CAM = False
-ENABLE_GUI = False
+ENABLE_GUI = True
 
 if ENABLE_VIRTUAL_CAM:
     import v4l2
@@ -42,6 +42,9 @@ def parse_args(args):
 @return width, height
 '''
 def get_resolution(res):
+    if ENABLE_GUI:
+        res = 480
+
     if res == 1080:
         width, height = 1920, 1080
     elif res == 720:

@@ -176,24 +176,16 @@ class MainWindow(QWidget):
             self.add_rerun_button()
             self.auto_resize()
 
-    def add_profile_sub_option(self):
-        # TODO - sub-options:
-        #   1 - Display all profiles
-        #   2 - Display all profiles for the devices attached to current computer
-        #   3 - Display only the profiles for the camera that are currently in used
-        sub_button_group = QGroupBox()
-        pass
-
     def construct_profile_layout(self, flag=ALL_PROFILES):
         if not self.profile_list_widget:
             self.profile_list_widget = list()
-            for cur_device, cur_pair_est in self.all_profiles_map.items():
+            for cur_device, cur_tuple_set in self.all_profiles_map.items():
                 cur_box = QGroupBox(cur_device)
                 layout = QVBoxLayout()
 
-                for cur_par in cur_pair_est:
-                    radio_button = QRadioButton(str(cur_par))
-                    radio_button.pair = cur_par
+                for cur_tuple in cur_tuple_set:
+                    radio_button = QRadioButton(str(cur_tuple[0]))
+                    radio_button.pair = (cur_tuple[1], cur_tuple[2])
                     radio_button.toggled.connect(self.on_select_pair)
                     radio_button.setChecked(False)
                     layout.addWidget(radio_button, alignment=Qt.AlignLeft)
