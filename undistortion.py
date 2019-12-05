@@ -570,7 +570,6 @@ def usage():
     print("   <device n>       : Device in the format of <idVendor>:<idProduct>, e.g.05a3:9230")
 
 
-# TODO - need to update readme
 if __name__ == "__main__":
     # Main function is for build profile for a list of devices
     profile_name, chessboard_path, img_path, obj_path, device_list = parse_args(sys.argv)

@@ -176,11 +176,15 @@ class MainWindow(QWidget):
             self.add_rerun_button()
             self.auto_resize()
 
-    def construct_profile_layout(self, flag=ALL_PROFILES):
+    def construct_profile_layout(self):
         if not self.profile_list_widget:
             self.profile_list_widget = list()
             for cur_device, cur_tuple_set in self.all_profiles_map.items():
-                cur_box = QGroupBox(cur_device)
+                device_name = undistortion.UndistortionPreProcessor.get_usb_device(device_id=cur_device)
+                if device_name and len(device_name) > 0:
+                    cur_box = QGroupBox(device_name)
+                else:
+                    cur_box = QGroupBox(cur_device + "(Detached)")
                 layout = QVBoxLayout()
 
                 for cur_tuple in cur_tuple_set:
