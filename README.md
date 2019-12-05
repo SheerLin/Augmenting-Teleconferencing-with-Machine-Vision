@@ -110,8 +110,9 @@ Check pictures under
 [this folder](undistort/data/chessboard/original4) as reference.
 3. Run this program to set up profile for you camera:
 ```
-python3 undistortion.py <chessboard path> <img point path> <obj point path> <device1> [<device2> ... <device n>]
+python3 undistortion.py <profile name> <chessboard path> <img point path> <obj point path> <device1> [<device2> ... <device n>]
 ```
+* **profile name**: The name of the profile, e.g.slight_640_800
 * **chessboard path**: Path to the folder of chessboard pictures, e.g."undistort/data/chessboard/original4/*"
 * **img point path**: Path to save the img points without post fix, e.g."undistort/profiles/img1"
 * **obj point path**: Path to save the obj points without post fix, e.g."undistort/profiles/obj1"

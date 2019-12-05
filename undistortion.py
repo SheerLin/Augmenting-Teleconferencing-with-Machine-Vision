@@ -560,7 +560,7 @@ def usage():
     test_profile_name = "slight_640_800"
     test_img_points_path = "undistort/profiles/img1"
     test_obj_points_path = "undistort/profiles/obj1"
-    print("   <profile name>: The name of the profile, e.g." + test_profile_name)
+    print("   <profile name>   : The name of the profile, e.g." + test_profile_name)
     print("   <chessboard path>: Path to the folder of chessboard pictures, e.g.\"" +
           default_chessboard_path2 + "\"")
     print("   <img point path> : Path to save the img points without post fix, e.g.\"" +
