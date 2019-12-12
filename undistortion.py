@@ -522,6 +522,19 @@ class UndistortionPreProcessor:
         else:
             return usb_devices[0]
 
+    @staticmethod
+    def get_videos_list():
+        cmd = "ls /dev/video*"
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        output = p.communicate()[0].decode("utf-8")
+        raw_list = str(output).splitlines()
+        result = list()
+        for cur_video in raw_list:
+            cur_video = cur_video.strip().split("/")[2]
+            result.append(cur_video)
+
+        return result
+
 
 def get_default_profile_pair():
     return (default_img_points_path, default_obj_points_path)

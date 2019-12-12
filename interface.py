@@ -37,6 +37,9 @@ class MainWindow(QWidget):
         self.frame_height = frame_height
         self.do_undistortion = False
         self.child_pid = -1
+        self.video_list = list()
+        self.input_video = -1
+        self.output_video = -1
 
         self.location_on_the_screen()
         self.init_interface()
@@ -63,11 +66,18 @@ class MainWindow(QWidget):
 
         MainWindow.delete_list_widget(self.list_widget)
         self.list_widget = list()
+        self.video_list = undistortion.UndistortionPreProcessor.get_videos_list()
 
-        # Add Run button
+        # 1. Add Run button
         self.add_run_button()
 
-        # Add radio buttons for profile selection
+        # 2. Add input and output source
+        self.add_input_output_source()
+        self.input_video = max(self.input_video, 0)
+        self.output_video = max(self.output_video, 0)
+
+        # 3. Add radio buttons for profile selection
+        self.add_title_label("Undistorter selection")
         radiobutton = QRadioButton("Not to use undistortion feature")
         radiobutton.setChecked(True)
         radiobutton.status = NO_UNDISTORTION
@@ -89,6 +99,47 @@ class MainWindow(QWidget):
 
         self.construct_profile_layout()
         self.auto_resize()
+
+    def add_input_output_source(self):
+        input_label = self.add_title_label("Input")
+        input_combo_box = QComboBox()
+        input_combo_box.addItems(self.video_list)
+        input_combo_box.currentTextChanged.connect(self.change_input_source)
+        try:
+            self.input_video = int(input_combo_box.currentText().strip("video"))
+        except ValueError:
+            self.input_video = 0
+        # print("Init self.input_video:", self.input_video)
+
+        input_label.setBuddy(input_combo_box)
+        self.list_widget.append(input_combo_box)
+
+        output_label = self.add_title_label("Output")
+        output_combo_box = QComboBox()
+        output_combo_box.addItems(self.video_list)
+        output_combo_box.currentTextChanged.connect(self.change_output_source)
+        try:
+            self.output_video = int(output_combo_box.currentText().strip("video"))
+        except ValueError:
+            self.output_video = 0
+        # print("Init self.output_video:", self.output_video)
+
+        output_label.setBuddy(output_combo_box)
+        self.list_widget.append(output_combo_box)
+
+    def change_input_source(self, text: str):
+        if text and "video" in text:
+            self.input_video = int(text.strip("video"))
+            print("self.input_video:", self.input_video)
+
+    def change_output_source(self, text: str):
+        self.output_video = int(text.strip("video"))
+        print("self.output_video:", self.output_video)
+
+    def add_title_label(self, text: str):
+        label = QLabel(text)
+        self.list_widget.append(label)
+        return label
 
     def add_run_button(self):
         run_button = QPushButton("Run")
