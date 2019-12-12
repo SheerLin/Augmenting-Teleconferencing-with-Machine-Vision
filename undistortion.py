@@ -34,6 +34,8 @@ class Undistortion:
     # TODO[low] - deprecate self.chessboard_folder_path
     # def __init__(self, chessboard_folder_path=None, img_points_path=None, obj_points_path=None):
     def __init__(self, img_points_path=None, obj_points_path=None):
+        self.logger = logging.getLogger("ATCV")
+
         # TODO[low] - Refactor the format of parameters
         self.img_points_path = img_points_path
         self.obj_points_path = obj_points_path

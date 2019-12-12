@@ -4,6 +4,7 @@ import argparse
 import fcntl
 import sys
 import os
+import logging
 
 import cv2
 
@@ -18,6 +19,15 @@ RESOLUTION = 1080
 ENABLE_VIRTUAL_CAM = True
 ENABLE_GUI = False
 
+ENABLE_UNDISTORTER = False
+ENABLE_BEAUTIFIER = True
+
+BENCHMARK = False
+DEBUG = False
+FORMAT = '%(asctime)-15s %(name)s (%(levelname)s) > %(message)s'
+logging.basicConfig(format=FORMAT)
+logger = logging.getLogger("ATCV")
+
 def str2bool(x):
     return x.lower() in ('true')
 
@@ -29,11 +39,15 @@ def parse_args():
     desc = "Augmenting Tele-conferencing with Computer Vision"
     parser = argparse.ArgumentParser(description=desc)
     
-    parser.add_argument('--inp', type=int, default=CAM_DEVICE_NUMBER, help='CAM_DEVICE_NUMBER: Camera input device')
-    parser.add_argument('--out', type=int, default=CAP_DEVICE_NUMBER, help='CAP_DEVICE_NUMBER: Virtual camera output device')
-    parser.add_argument('--res', type=int, default=RESOLUTION, help='RESOLUTION: Resolution for output')
-    parser.add_argument('--vcam', type=str2bool, default=ENABLE_VIRTUAL_CAM, help='ENABLE_VIRTUAL_CAM: Enable Virtual camera output')
-    parser.add_argument('--gui', type=str2bool, default=ENABLE_GUI, help='ENABLE_GUI: Enable GUI mode')
+    parser.add_argument('-i', '--inp', type=int, default=CAM_DEVICE_NUMBER, help='CAM_DEVICE_NUMBER: Camera input device')
+    parser.add_argument('-o', '--out', type=int, default=CAP_DEVICE_NUMBER, help='CAP_DEVICE_NUMBER: Virtual camera output device')
+    parser.add_argument('-r', '--res', type=int, default=RESOLUTION, help='RESOLUTION: Resolution for output')
+    parser.add_argument('-v', '--vcam', type=str2bool, default=ENABLE_VIRTUAL_CAM, help='ENABLE_VIRTUAL_CAM: Enable Virtual camera output')
+    parser.add_argument('-g', '--gui', type=str2bool, default=ENABLE_GUI, help='ENABLE_GUI: Enable GUI mode')
+    parser.add_argument('-b', '--benchamark', type=str2bool, default=BENCHMARK, help='BENCHAMRK: Enable benchamark mode')
+    parser.add_argument('-d', '--debug', type=str2bool, default=DEBUG, help='DEBUG: Enable debugging mode')
+    parser.add_argument('-ed', '--undistorter', type=str2bool, default=ENABLE_UNDISTORTER, help='ENABLE_UNDISTORTER: Enable undistorter component')
+    parser.add_argument('-eb', '--beautifier', type=str2bool, default=ENABLE_BEAUTIFIER, help='ENABLE_BEAUTIFIER: Enable beautifier component')
 
     args = parser.parse_args()
     return args
@@ -79,24 +93,21 @@ def get_cam_device(dev_number, width, height):
         print("Exception in opening device", dev_number)
         print(e)
         exit()
-    print("Old Width: {}, Height: {}".format(width, height))
     height = im.shape[0]
     width = im.shape[1]
-    print("Cam Device: ", dev_number)
-    print("Width: {}, Height: {}".format(width, height))
+    logger.debug("Cam Device: {}".format(dev_number))
+    logger.debug("New Width: {}, Height: {}".format(width, height))
     return device, width, height
 
 
 '''
 @brief Obtains a video input device, using video file as input.
-@param video_path Number of device to open
+@param video_path Path of video to open
 @return device, width, height
 '''
 def get_cam_device_from_video(video_path):
     try:
         device = cv2.VideoCapture(video_path)
-        width = device.get(cv2.CAP_PROP_FRAME_WIDTH)  # float
-        height = device.get(cv2.CAP_PROP_FRAME_HEIGHT)  # float
         ret, im = device.read()
         if not ret:
             print("Can't read from video", video_path)
@@ -107,8 +118,8 @@ def get_cam_device_from_video(video_path):
         exit()
     height = im.shape[0]
     width = im.shape[1]
-    print("Video input: ", video_path)
-    print("Width: {}, Height: {}".format(width, height))
+    logger.debug("Video Input: {}".format(video_path))
+    logger.debug("New Width: {}, Height: {}".format(width, height))
     return device, width, height
 
 '''
@@ -132,7 +143,7 @@ def configure_cam_device(device, width, height):
 '''
 def get_cap_device(dev_number, width, height):
     dev_name = '/dev/video' + str(dev_number)
-    print("Capture Device: ", dev_name)
+    logger.debug("Capture Device: {}".format(dev_name))
     try:
         device = open(dev_name, 'wb')
         if device is None:
@@ -157,7 +168,7 @@ def configure_cap_device(device, width, height):
     # get capabilities
     capability = v4l2.v4l2_capability()
     fcntl.ioctl(device, v4l2.VIDIOC_QUERYCAP, capability)
-    print("v4l2 Driver: ", capability.driver)
+    logger.debug("v4l2 Driver: {}".format(capability.driver))
 
     # set format 
     # https://linuxtv.org/downloads/v4l-dvb-apis/uapi/v4l/pixfmt.html
@@ -181,32 +192,37 @@ def configure_cap_device(device, width, height):
 @param height Desired height
 @return Void
 '''
-def process_video(cam_device, cap_device, width, height, img_path="", obj_path="", do_undistort=False):
-    eng = engine.Engine(width, height, img_path, obj_path, do_undistort)
+def process_video(cam_device, cap_device, width, height, img_path, obj_path):
+    eng = engine.Engine({
+        'width': width, 
+        'height': height, 
+        'img_path': img_path, 
+        'obj_path': obj_path,
+        'enable_undistorter': ENABLE_UNDISTORTER,
+        'enable_beautifier': ENABLE_BEAUTIFIER,
+    }, BENCHMARK, DEBUG)
 
     while True:
-        # try:
-        ret, im = cam_device.read()
-        if not ret:
-            print("End of Input Stream")
-            break
-        
-        out = eng.process(im)
-        if ENABLE_VIRTUAL_CAM:
-            cap_device.write(out)
+        try:
+            ret, im = cam_device.read()
+            if not ret:
+                logger.info("End of Input Stream")
+                break
+            
+            out = eng.process(im)
+            if ENABLE_VIRTUAL_CAM:
+                cap_device.write(out)
 
-        # except Exception as e:
-        #     print(e)
-        #     break
+        except Exception as e:
+            logger.error(e)
         
-        # break on `escape` press
+        # Break on `escape` press
         if cv2.waitKey(1) == 27:
             break
 
 
 if __name__== "__main__":
-
-    # parse arguments
+    # Parse arguments
     args = parse_args()
     if args is None:
         exit()
@@ -215,54 +231,53 @@ if __name__== "__main__":
     RESOLUTION = args.res
     ENABLE_VIRTUAL_CAM = args.vcam
     ENABLE_GUI = args.gui
+    ENABLE_BEAUTIFIER = args.beautifier
+    BENCHMARK = args.benchamark
+    DEBUG = args.debug
     
-    print("CAM_DEVICE_NUMBER", CAM_DEVICE_NUMBER)
+    log_level = logging.WARNING if not DEBUG else logging.DEBUG
+    logger.setLevel(log_level)
+    logger.info("CAM_DEVICE_NUMBER: {}".format(CAM_DEVICE_NUMBER))
     if ENABLE_VIRTUAL_CAM:
-        print("CAP_DEVICE_NUMBER", CAP_DEVICE_NUMBER)
-    print("RESOLUTION", RESOLUTION)
-    print("ENABLE_VIRTUAL_CAM", ENABLE_VIRTUAL_CAM)
-    print("ENABLE_GUI", ENABLE_GUI)
+        logger.info("CAP_DEVICE_NUMBER: {}".format(CAP_DEVICE_NUMBER))
+    logger.info("RESOLUTION: {}".format(RESOLUTION))
     
-    # set up
+    # Set up devices
     width, height = get_resolution(RESOLUTION)
+    logger.debug("Width: {}, Height: {}".format(width, height))
     cam_device, width, height = get_cam_device(CAM_DEVICE_NUMBER, width, height)
-    print("CAM_RESOLUTION", width, height)
+    logger.info("CAM_RESOLUTION: {}, {}".format(width, height))
     if ENABLE_VIRTUAL_CAM:
         import v4l2
         cap_device = get_cap_device(CAP_DEVICE_NUMBER, width, height)
     else:
         cap_device = None
 
-    # Initialize the profile path before processing video
     if ENABLE_GUI:
         # TODO
         # Start GUI for these arguments
         # camera device, capture device, resolution,
         # enable vcam, distortion profile, video path
-        print("Use UI")
+        logger.info("Using GUI")
 
         undistortion_preprocessor = undistortion.UndistortionPreProcessor(CAM_DEVICE_NUMBER)
         device_to_profile = undistortion_preprocessor.init_profile_mapping()
-        # print("device_to_profile:", device_to_profile)
 
         # Will run process_video during the lifetime of user interface
         interface.initialize_ui(device_to_profile, cam_device, cap_device, width, height)
 
     else:
-        undistortion_preprocessor = undistortion.UndistortionPreProcessor(CAM_DEVICE_NUMBER)
-        undistortion_preprocessor.init_profile_mapping()
-        img_path, obj_path, do_undistort = undistortion_preprocessor()
-        # print(img_path, obj_path)
-        # print("do_undistort:",do_undistort)
+        img_path = None
+        obj_path = None
+        if ENABLE_UNDISTORTER:
+            # Initialize the undistorter profile path before processing video
+            undistortion_preprocessor = undistortion.UndistortionPreProcessor(CAM_DEVICE_NUMBER)
+            undistortion_preprocessor.init_profile_mapping()
+            img_path, obj_path, ENABLE_UNDISTORTER = undistortion_preprocessor()
+        
+        process_video(cam_device, cap_device, width, height, img_path, obj_path)
 
-        # do_undistort = True
-        # img_path = "undistort/profiles/original4_img.npy"
-        # obj_path = "undistort/profiles/original4_obj.npy"
-
-        # process cap_device
-        process_video(cam_device, cap_device, width, height, img_path, obj_path, do_undistort)
-
-    # clean up
+    # Clean up
     del(cam_device)
     if ENABLE_VIRTUAL_CAM:
         cap_device.close()
