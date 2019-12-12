@@ -1,11 +1,11 @@
-# Augmenting Tele-conferencing with Computer Vision
-CMU INI Practicum Team 5
+# Augmenting Teleconferencing with Computer Vision
+CMU INI Practicum
 
-# Faculaty
-Piotr, Carlee
+# Faculty
+Piotr Mardziel, Carlee Joe-Wong
 
 # Team members
-Arpit Gupta, Nan Lin, MengMeng Zhang
+Arpit Gupta, MengMeng Zhang, Nan Lin
 
 
 # Build
@@ -80,10 +80,13 @@ sudo rmmod akvcam.ko
 ```
 sudo pip install numpy
 sudo pip install python-opencv
+sudo pip install pyqt5
 sudo pip install v4l2
 sudo pip install inotify
-sudo pip install pyqt5
 ```
+
+v4l2: Support for virtual cam on Linux
+inotify: Support for file access event hook for autostart
 
 Patch v4l2 for Python 3:
 https://bugs.launchpad.net/python-v4l2/+bug/1664158
@@ -100,34 +103,28 @@ the `v4l2_priority` line ought to be
 ) = list(range(0, 4)) + [2]
 ```
 
-## Before Running
-You may want to undistort the frames if you use a USB camera.
 
-To calibrate your camera, you will need to:
-1. Print out a chessboard picture.
-2. Take several pictures using your USB camera and put them in a folder that is accessible. 
-Check pictures under 
-[this folder](undistort/data/chessboard/original4) as reference.
-3. Run this program to set up profile for you camera:
+# Undistorter Setup
+You may want to undistort the video output if your camera has a wide angle lens.
+
+To calibrate your camera, follow these steps:
+1. Print out a picture of a chessboard.
+2. Take several pictures using your camera with different orientations and save them in a folder.
+Check pictures under [this folder](undistort/data/chessboard/original4) for reference.
+3. Run the following commant to set up profile for you camera:
 ```
-python3 undistortion.py <profile name> <chessboard path> <img point path> <obj point path> <device1> [<device2> ... <device n>]
+python3 undistortion.py <profile_name> <chessboard_path> <img_point_path> <obj_point_path> <device1> [<device2> ... <device n>]
 ```
-* **profile name**: The name of the profile, e.g.slight_640_800
-* **chessboard path**: Path to the folder of chessboard pictures, e.g."undistort/data/chessboard/original4/*"
-* **img point path**: Path to save the img points without post fix, e.g."undistort/profiles/img1"
-* **obj point path**: Path to save the obj points without post fix, e.g."undistort/profiles/obj1"
-* **device n**: Device in the format of \<idVendor\>:\<idProduct\>, run lsusb to find them, e.g.05a3:9230
+* **profile_name**: The name of the profile, e.g.slight_640_800
+* **chessboard_path**: Path to the folder of chessboard pictures, e.g."undistort/data/chessboard/original4/*"
+* **img_point_path**: Path to save the img points without post fix, e.g."undistort/profiles/img1"
+* **obj_point_path**: Path to save the obj points without post fix, e.g."undistort/profiles/obj1"
+* **deviceN**: Device in the format of \<idVendor\>:\<idProduct\>, run lsusb to find them, e.g.05a3:9230
 * e.g.python3 undistortion.py "undistort/data/chessboard/original4/*" "undistort/profiles/img1"
  "undistort/profiles/obj1" 05a3:9230
 
 
-
 ## Run
 ```
-python3 main.py
+python3 main.py -h
 ```
-
-
-## Docs
-https://circuitdigest.com/tutorial/image-manipulation-in-python-opencv-part2
-https://docs.opencv.org/3.4/dd/d49/tutorial_py_contour_features.html
