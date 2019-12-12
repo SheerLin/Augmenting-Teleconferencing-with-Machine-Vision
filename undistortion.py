@@ -7,6 +7,7 @@ import numpy as np
 import subprocess
 import shutil
 import sys
+import logging
 
 profiles_folder = "undistort/profiles"
 npy_file_postfix = ".npy"
@@ -307,7 +308,7 @@ class UndistortionPreProcessor:
                     self.device_to_profile[current_device].append(
                         (cur_profile_name, current_img_path, current_obj_path))
 
-            print("After initialize self.device_to_profile:", self.device_to_profile)
+            # print("After initialize self.device_to_profile:", self.device_to_profile)
 
         return self.device_to_profile
 

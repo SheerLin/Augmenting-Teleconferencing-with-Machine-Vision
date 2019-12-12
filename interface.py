@@ -8,8 +8,6 @@ import subprocess
 
 # Options for profile selection
 NO_UNDISTORTION = "NO_UNDISTORTION"
-# TODO - deprecate chessboard folder
-# SELECT_CHESSBOARD_FOLDER = "SELECT_CHESSBOARD_FOLDER"
 DEFAULT_PROFILE = "DEFAULT_PROFILE"
 SELECT_ONE_PROFILE = "SELECT_ONE_PROFILE"
 
@@ -21,7 +19,8 @@ PROFILES_CUR_CAM_ONLY = "PROFILES_CUR_CAM_ONLY"
 
 class MainWindow(QWidget):
 
-    def __init__(self, profiles_map: dict, cam_device, cap_device=None, frame_width=1920, frame_height=1080):
+    def __init__(self, profiles_map: dict, cam_device, cap_device=None, frame_width=1920, frame_height=1080,
+                 enable_virtual_cam=False):
         super(MainWindow, self).__init__(flags=Qt.Widget)
         self.left = 10
         self.top = 10
@@ -40,24 +39,10 @@ class MainWindow(QWidget):
         self.video_list = list()
         self.input_video = -1
         self.output_video = -1
+        self.enable_virtual_cam = enable_virtual_cam
 
-        self.location_on_the_screen()
-        self.init_interface()
-
-    def location_on_the_screen(self):
         self.resize(self.width, self.sizeHint().height())
-
-        # self.setGeometry(self.left, self.top, self.width, self.height)
-
-        # TODO(low) - put in middle of the screen
-        # ag = QDesktopWidget().availableGeometry()
-        # sg = QDesktopWidget().screenGeometry()
-        #
-        # widget = self.geometry()
-        # x = ag.width() - widget.width()
-        # y = 2 * ag.height() - sg.height() - widget.height()
-        # self.move(x, y)
-        pass
+        self.init_interface()
 
     def init_interface(self):
         if not self.layout:
@@ -81,19 +66,15 @@ class MainWindow(QWidget):
         radiobutton = QRadioButton("Not to use undistortion feature")
         radiobutton.setChecked(True)
         radiobutton.status = NO_UNDISTORTION
-        self.add_level1_radio_button(self.layout, radiobutton)
-
-        # radiobutton = QRadioButton("Select a the folder for calibration pictures")
-        # radiobutton.status = SELECT_CHESSBOARD_FOLDER
-        # self.add_level1_radio_button(layout, radiobutton)
+        self.add_level1_radio_button(radiobutton)
 
         radiobutton = QRadioButton("Use Default profile")
         radiobutton.status = DEFAULT_PROFILE
-        self.add_level1_radio_button(self.layout, radiobutton)
+        self.add_level1_radio_button(radiobutton)
 
         radiobutton = QRadioButton("Select a specific profile")
         radiobutton.status = SELECT_ONE_PROFILE
-        self.add_level1_radio_button(self.layout, radiobutton)
+        self.add_level1_radio_button(radiobutton)
 
         MainWindow.add_list_widget(self.list_widget, self.layout)
 
@@ -168,7 +149,7 @@ class MainWindow(QWidget):
             for cur_profile_list_widget in list_widget:
                 cur_profile_list_widget.setParent(None)
 
-    def add_level1_radio_button(self, layout: QWidget, button: QRadioButton):
+    def add_level1_radio_button(self, button: QRadioButton):
         button.toggled.connect(self.on_click_radio)
         button.setCursor(QCursor(Qt.PointingHandCursor))
         self.list_widget.append(button)
@@ -182,11 +163,6 @@ class MainWindow(QWidget):
                 MainWindow.add_list_widget(self.profile_list_widget, self.layout)
             else:
                 MainWindow.delete_list_widget(self.profile_list_widget)
-
-                # TODO - deprecate chessboard folder
-                # if radio_button.status == SELECT_CHESSBOARD_FOLDER:
-                #     selected_path = MainWindow.select_folder()
-                #     print("selected_path:", selected_path)
 
                 if radio_button.status == DEFAULT_PROFILE:
                     self.selected_profile_pair = undistortion.get_default_profile_pair()
@@ -216,7 +192,8 @@ class MainWindow(QWidget):
             try:
                 main.process_video(cam_device=self.cam_device, cap_device=self.cap_device,
                                    width=self.frame_width, height=self.frame_height, img_path=img_path,
-                                   obj_path=obj_path, do_undistort=self.do_undistortion)
+                                   obj_path=obj_path, enable_undistorter=self.do_undistortion,
+                                   enable_virtual_cam=self.enable_virtual_cam)
             except Exception as e:
                 self.kill_main_process_video()
                 print("Exception when processing frame!!! See below exception:")
@@ -255,11 +232,6 @@ class MainWindow(QWidget):
             print("Status is :%s" % str(radio_button.pair))
             self.selected_profile_pair = radio_button.pair
             return radio_button.pair
-
-    # TODO: might not need this
-    def selecting_profiles(self):
-        print("In selecting_profiles:self.available_profiles_map:", self.all_profiles_map)
-        pass
 
     @staticmethod
     def select_folder():
@@ -305,7 +277,8 @@ def kill_main(pid):
         subprocess.Popen(kill_command)
 
 
-def initialize_ui(all_profiles_map: dict, cam_device=None, cap_device=None, width=None, height=None):
+def initialize_ui(all_profiles_map: dict, cam_device=None, cap_device=None, width=None, height=None,
+                  enable_virtual_cam=False):
     app = QApplication([])
 
     # Force the style to be the same on all OSs:
@@ -334,16 +307,3 @@ def initialize_ui(all_profiles_map: dict, cam_device=None, cap_device=None, widt
     window.show()
 
     app.exec_()
-
-
-if __name__ == '__main__':
-    # TODO(debug) - delete it
-    available_profiles_map = dict()
-    available_profiles_map["device1"] = set()
-    available_profiles_map["device1"].add(("img_path1", "obj_path1"))
-    available_profiles_map["device1"].add(("img_path2", "obj_path2"))
-
-    available_profiles_map["device2"] = set()
-    available_profiles_map["device2"].add(("img_path3", "obj_path3"))
-
-    initialize_ui(available_profiles_map)

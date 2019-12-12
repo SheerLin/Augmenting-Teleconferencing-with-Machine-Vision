@@ -192,13 +192,14 @@ def configure_cap_device(device, width, height):
 @param height Desired height
 @return Void
 '''
-def process_video(cam_device, cap_device, width, height, img_path, obj_path):
+def process_video(cam_device, cap_device, width, height, img_path, obj_path,
+                  enable_undistorter=ENABLE_UNDISTORTER,enable_virtual_cam=ENABLE_VIRTUAL_CAM):
     eng = engine.Engine({
         'width': width, 
         'height': height, 
         'img_path': img_path, 
         'obj_path': obj_path,
-        'enable_undistorter': ENABLE_UNDISTORTER,
+        'enable_undistorter': enable_undistorter,
         'enable_beautifier': ENABLE_BEAUTIFIER,
     }, BENCHMARK, DEBUG)
 
@@ -210,7 +211,7 @@ def process_video(cam_device, cap_device, width, height, img_path, obj_path):
                 break
             
             out = eng.process(im)
-            if ENABLE_VIRTUAL_CAM:
+            if enable_virtual_cam:
                 cap_device.write(out)
 
         except Exception as e:
@@ -262,7 +263,8 @@ if __name__== '__main__':
         device_to_profile = undistortion_preprocessor.init_profile_mapping()
 
         # Will run process_video during the lifetime of user interface
-        interface.initialize_ui(device_to_profile, cam_device, cap_device, width, height)
+        interface.initialize_ui(device_to_profile, cam_device, cap_device, width, height,
+                                enable_virtual_cam=ENABLE_VIRTUAL_CAM)
 
     else:
         img_path = None
