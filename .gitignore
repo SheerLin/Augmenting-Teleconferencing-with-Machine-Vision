@@ -1,7 +1,9 @@
-.idea/*
-output/*
 __pycache__
 *.pyc
-.DS_Store
+
+output/*
 *.log
-test_undistort.py
+
+.idea
+.vscode
+.DS_Store
