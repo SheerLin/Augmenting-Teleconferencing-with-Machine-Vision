@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import fcntl
 import sys
 import os
@@ -14,28 +15,28 @@ CAM_DEVICE_NUMBER = 0 # input device
 CAP_DEVICE_NUMBER = 2 # output device
 RESOLUTION = 1080
 
-ENABLE_VIRTUAL_CAM = False
-ENABLE_GUI = True
+ENABLE_VIRTUAL_CAM = True
+ENABLE_GUI = False
 
-if ENABLE_VIRTUAL_CAM:
-    import v4l2
+def str2bool(x):
+    return x.lower() in ('true')
+
 '''
 @brief Parses command line arguments.
-
-@param args Command line arguments
-@return cam_device_number, cap_device_number, resolution
+@return args
 '''
-def parse_args(args):
-    cam_device_number = CAM_DEVICE_NUMBER
-    cap_device_number = CAP_DEVICE_NUMBER
-    resolution = RESOLUTION
-    if len(args) >= 2:
-        cam_device_number = int(args[1])
-    if len(args) >= 3:
-        cap_device_number = int(args[2])
-    if len(args) >= 4:
-        resolution = int(args[3])
-    return cam_device_number, cap_device_number, resolution
+def parse_args():
+    desc = "Augmenting Tele-conferencing with Computer Vision"
+    parser = argparse.ArgumentParser(description=desc)
+    
+    parser.add_argument('--inp', type=int, default=CAM_DEVICE_NUMBER, help='CAM_DEVICE_NUMBER: Camera input device')
+    parser.add_argument('--out', type=int, default=CAP_DEVICE_NUMBER, help='CAP_DEVICE_NUMBER: Virtual camera output device')
+    parser.add_argument('--res', type=int, default=RESOLUTION, help='RESOLUTION: Resolution for output')
+    parser.add_argument('--vcam', type=str2bool, default=ENABLE_VIRTUAL_CAM, help='ENABLE_VIRTUAL_CAM: Enable Virtual camera output')
+    parser.add_argument('--gui', type=str2bool, default=ENABLE_GUI, help='ENABLE_GUI: Enable GUI mode')
+
+    args = parser.parse_args()
+    return args
 
 '''
 @brief Returns width-height based on the resolution.
@@ -61,7 +62,6 @@ def get_resolution(res):
 @brief Obtains a video input device, and configures it for the given
        width-height. Reads first frame from the device to get the
        correct width-height.
-       
 @param dev_number Number of device to open
 @param width Desired width
 @param height Desired height
@@ -113,7 +113,6 @@ def get_cam_device_from_video(video_path):
 
 '''
 @brief Configures cam device for the given width-height.
-
 @param device Cam device
 @param width Desired width
 @param height Desired height
@@ -126,7 +125,6 @@ def configure_cam_device(device, width, height):
 '''
 @brief Obtains a video output device, and configure it for the given
        width-height.
-
 @param dev_number Number of device to open
 @param width Desired width
 @param height Desired height
@@ -150,7 +148,6 @@ def get_cap_device(dev_number, width, height):
 '''
 @brief Configures cap device for the given width-height, and output
        format.
-
 @param device Cap device
 @param width Desired width
 @param height Desired height
@@ -178,7 +175,6 @@ def configure_cap_device(device, width, height):
 '''
 @brief Main loop for reading the video stream from cam_device,
        processing, and writing the video stream to cap_device.
-
 @param cam_device Cam device (input)
 @param cap_device Cap device (output)
 @param width Desired width
@@ -210,26 +206,29 @@ def process_video(cam_device, cap_device, width, height, img_path="", obj_path="
 
 if __name__== "__main__":
 
-    # parse input
-    # TODO
-    # camera device, capture device, resoultion, enbale gui, 
-    # enable vcam, distortion profile, video path
-    CAM_DEVICE_NUMBER, CAP_DEVICE_NUMBER, RESOLUTION = parse_args(sys.argv)
+    # parse arguments
+    args = parse_args()
+    if args is None:
+        exit()
+    CAM_DEVICE_NUMBER = args.inp
+    CAP_DEVICE_NUMBER = args.out
+    RESOLUTION = args.res
+    ENABLE_VIRTUAL_CAM = args.vcam
+    ENABLE_GUI = args.gui
+    
     print("CAM_DEVICE_NUMBER", CAM_DEVICE_NUMBER)
     if ENABLE_VIRTUAL_CAM:
         print("CAP_DEVICE_NUMBER", CAP_DEVICE_NUMBER)
     print("RESOLUTION", RESOLUTION)
+    print("ENABLE_VIRTUAL_CAM", ENABLE_VIRTUAL_CAM)
+    print("ENABLE_GUI", ENABLE_GUI)
     
     # set up
     width, height = get_resolution(RESOLUTION)
-    print(RESOLUTION, width, height)
     cam_device, width, height = get_cam_device(CAM_DEVICE_NUMBER, width, height)
-    # cam_device, width, height = get_cam_device_from_video('data/wb_mengmeng.mov')
-    # cam_device, width, height = get_cam_device_from_video('data/AccessMath_lecture_01_part_3.mp4')
-    # cam_device, width, height = get_cam_device_from_video('raw-data/Piotr-wb.mov')
-    # cam_device, width, height = get_cam_device_from_video('raw-data/classroom-wb.mov')
-    # cam_device, width, height = get_cam_device_from_video('data/final4.webm')
+    print("CAM_RESOLUTION", width, height)
     if ENABLE_VIRTUAL_CAM:
+        import v4l2
         cap_device = get_cap_device(CAP_DEVICE_NUMBER, width, height)
     else:
         cap_device = None
