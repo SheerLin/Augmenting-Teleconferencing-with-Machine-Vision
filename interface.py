@@ -5,6 +5,7 @@ import main
 import undistortion
 import os
 import subprocess
+import logging
 
 # Options for profile selection
 NO_UNDISTORTION = "NO_UNDISTORTION"
@@ -40,6 +41,7 @@ class MainWindow(QWidget):
         self.input_video = -1
         self.output_video = -1
         self.enable_virtual_cam = enable_virtual_cam
+        self.logger = logging.getLogger("ATCV")
 
         self.resize(self.width, self.sizeHint().height())
         self.init_interface()
@@ -86,11 +88,12 @@ class MainWindow(QWidget):
         input_combo_box = QComboBox()
         input_combo_box.addItems(self.video_list)
         input_combo_box.currentTextChanged.connect(self.change_input_source)
+
         try:
             self.input_video = int(input_combo_box.currentText().strip("video"))
         except ValueError:
             self.input_video = 0
-        # print("Init self.input_video:", self.input_video)
+        self.logger.debug('Initialized input source: video{}'.format(self.input_video))
 
         input_label.setBuddy(input_combo_box)
         self.list_widget.append(input_combo_box)
@@ -99,11 +102,12 @@ class MainWindow(QWidget):
         output_combo_box = QComboBox()
         output_combo_box.addItems(self.video_list)
         output_combo_box.currentTextChanged.connect(self.change_output_source)
+
         try:
             self.output_video = int(output_combo_box.currentText().strip("video"))
         except ValueError:
             self.output_video = 0
-        # print("Init self.output_video:", self.output_video)
+        self.logger.debug('Initialized output source: video{}'.format(self.output_video))
 
         output_label.setBuddy(output_combo_box)
         self.list_widget.append(output_combo_box)
@@ -111,11 +115,12 @@ class MainWindow(QWidget):
     def change_input_source(self, text: str):
         if text and "video" in text:
             self.input_video = int(text.strip("video"))
-            print("self.input_video:", self.input_video)
+            self.logger.debug("Update input source: video{}".format(self.input_video))
 
     def change_output_source(self, text: str):
-        self.output_video = int(text.strip("video"))
-        print("self.output_video:", self.output_video)
+        if text and "video" in text:
+            self.output_video = int(text.strip("video"))
+            self.logger.debug("Update output source: video{}".format(self.output_video))
 
     def add_title_label(self, text: str):
         label = QLabel(text)
@@ -157,7 +162,7 @@ class MainWindow(QWidget):
     def on_click_radio(self):
         radio_button = self.sender()
         if radio_button.isChecked():
-            # print("Status is :%s" % radio_button.status)
+            self.logger.debug("Undistorter selection is:{}".format(radio_button.status))
 
             if radio_button.status == SELECT_ONE_PROFILE:
                 MainWindow.add_list_widget(self.profile_list_widget, self.layout)
@@ -166,7 +171,7 @@ class MainWindow(QWidget):
 
                 if radio_button.status == DEFAULT_PROFILE:
                     self.selected_profile_pair = undistortion.get_default_profile_pair()
-                    print("Select default profile:", self.selected_profile_pair)
+                    self.logger.debug("Select default profile:{}".format(self.selected_profile_pair))
 
             if radio_button.status == NO_UNDISTORTION:
                 self.do_undistortion = False
@@ -196,8 +201,7 @@ class MainWindow(QWidget):
                                    enable_virtual_cam=self.enable_virtual_cam)
             except Exception as e:
                 self.kill_main_process_video()
-                print("Exception when processing frame!!! See below exception:")
-                print(e)
+                self.logger.error("Exception when processing frame:{}".format(e))
         else:
             MainWindow.delete_list_widget(self.list_widget)
             MainWindow.delete_list_widget(self.profile_list_widget)
@@ -229,7 +233,7 @@ class MainWindow(QWidget):
     def on_select_pair(self):
         radio_button = self.sender()
         if radio_button.isChecked():
-            print("Status is :%s" % str(radio_button.pair))
+            self.logger.debug("Selected profile:{}".format(radio_button.pair))
             self.selected_profile_pair = radio_button.pair
             return radio_button.pair
 

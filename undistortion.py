@@ -32,15 +32,12 @@ none_profile_symbol = "n"
 #  3. If no profile path and no has chessboards images folder path, select from the existing profiles
 #  4. Undistort the image
 class Undistortion:
-    # TODO[low] - deprecate self.chessboard_folder_path
-    # def __init__(self, chessboard_folder_path=None, img_points_path=None, obj_points_path=None):
     def __init__(self, img_points_path=None, obj_points_path=None):
         self.logger = logging.getLogger("ATCV")
 
         # TODO[low] - Refactor the format of parameters
         self.img_points_path = img_points_path
         self.obj_points_path = obj_points_path
-        # self.chessboard_folder_path = chessboard_folder_path
 
         # TO be initialized:
         # Arrays to store object points and image points from all the images.
@@ -65,14 +62,6 @@ class Undistortion:
 
     def initialize(self):
         """Initialize the needed info"""
-
-        # TODO[low] - deprecate self.chessboard_folder_path
-        # if self.chessboard_folder_path:
-        #     print("Use input chessboard folder path:", self.chessboard_folder_path)
-        #     self.img_points, self.obj_points = Undistortion.init_img_obj_points_from_chessboards(
-        #         self.chessboard_folder_path)
-        # else:
-
         # Init self.obj_points and self. img_points
         if self.img_points_path and os.path.isfile(self.img_points_path) \
                 and self.obj_points_path and os.path.exists(self.obj_points_path):
@@ -139,8 +128,6 @@ class Undistortion:
         elapsed_time = time.time() - start_time
         cv2.destroyAllWindows()
         print("Collect 3d point from ", valid_pics, " pictures:", elapsed_time)
-        # print("img_points", type(img_points), "len=", len(img_points))
-        # print("obj_points", type(obj_points), "len=", len(obj_points))
 
         return img_points, obj_points
 
