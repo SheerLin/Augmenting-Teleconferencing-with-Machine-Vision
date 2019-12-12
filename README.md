@@ -125,6 +125,15 @@ python3 undistortion.py <profile_name> <chessboard_path> <img_point_path> <obj_p
 
 
 ## Run
+For the autostart watcher:
+```
+python3 event.py -h
+```
+
+
+or
+
+For the main program:
 ```
 python3 main.py -h
 ```

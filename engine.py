@@ -17,7 +17,7 @@ SHOW_IMAGE = True
 class Engine:
 
     def __init__(self, params, benchamark, debug):
-        self.logger = logging.getLogger("ATCV")
+        self.logger = logging.getLogger('ATCV')
 
         self.frame_num = 0
         self.start_time = 0
@@ -97,7 +97,7 @@ class Engine:
             if start_time != 0:
                 t = end_time - start_time
                 fps = c / t
-                self.logger.info("fps: {:.2f}".format(fps))
+                self.logger.info('fps: {:.2f}'.format(fps))
             self.start_time = end_time
     
     def process(self, orig):

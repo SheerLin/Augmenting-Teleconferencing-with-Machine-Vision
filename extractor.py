@@ -8,7 +8,7 @@ from utils import *
 class Extractor:
 
     def __init__(self, params, benchmark, debug):
-        self.logger = logging.getLogger("ATCV")
+        self.logger = logging.getLogger('ATCV')
         
         self.width = params['width']
         self.height = params['height']
@@ -25,7 +25,7 @@ class Extractor:
         
         self.benchmark = benchmark
         if benchmark:
-            self.logfile = open("extract_points.log", "w")
+            self.logfile = open('extract_points.log', 'w')
         
         self.debug = debug
         self.show_image = debug
@@ -221,8 +221,8 @@ class Extractor:
 
         if self.benchmark:
             for i in range(len(self.points)):
-                self.logfile.write(str(self.points[i][0]+x) + "," + str(self.points[i][1]+y) + ";")
-            self.logfile.write("\n")
+                self.logfile.write(str(self.points[i][0]+x) + ',' + str(self.points[i][1]+y) + ';')
+            self.logfile.write('\n')
         
         # np_points = np.array(self.points, np.int)[[0,1,3,2],:]
         # np_points[:,0] = np_points[:,0] + self.dims[0]
