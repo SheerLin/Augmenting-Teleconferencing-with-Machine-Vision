@@ -45,14 +45,15 @@ class MainWindow(QWidget):
         self.enable_undistortion = args.undistorter
         self.enable_beautifier = args.beautifier
         self.debug = args.debug
-        self.profile = args.profile
         self.benchmark = False
 
         self.cam_device = None
         self.cap_device = None
         self.child_pid = -1
         self.selected_profile_pair = None  # The option for selecting one from all profiles
+        self.selected_profile_name = None
         self.final_profile_pair = None  # The final decision of selected profile
+        self.final_profile_name = None
         self.logger = logging.getLogger("ATCV")
 
         self.resize(self.width, self.sizeHint().height())
@@ -188,11 +189,13 @@ class MainWindow(QWidget):
             if radio_button.status == SELECT_ONE_PROFILE:
                 MainWindow.add_list_widget(self.profile_list_widget, self.layout)
                 self.final_profile_pair = self.selected_profile_pair
+                self.final_profile_name = self.selected_profile_name
             else:
                 MainWindow.delete_list_widget(self.profile_list_widget)
 
                 if radio_button.status == DEFAULT_PROFILE:
                     self.final_profile_pair = undistortion.get_default_profile_pair()
+                    self.final_profile_name = undistortion.default_profile_name
                     self.logger.debug("Select default profile:{}".format(self.final_profile_pair))
 
             if radio_button.status == NO_UNDISTORTION:
@@ -249,8 +252,8 @@ class MainWindow(QWidget):
         if platform.system() == "Darwin":
 
             cmd = "python3 main.py -g f -d " + str(self.debug) + " -v f -r " + str(self.resolution) + " -i 0"
-            if self.profile:
-                cmd += " -p " + self.profile
+            if self.enable_undistortion and self.final_profile_name:
+                cmd += " -ed True -p \"" + self.final_profile_name + "\""
             p = subprocess.Popen(cmd, shell=True)
             self.child_pid = p.pid
 
@@ -317,6 +320,7 @@ class MainWindow(QWidget):
                     if not set_default:
                         radio_button.setChecked(True)
                         self.selected_profile_pair = radio_button.pair
+                        self.selected_profile_name = radio_button.text()
                         set_default = True
                     else:
                         radio_button.setChecked(False)
@@ -332,7 +336,9 @@ class MainWindow(QWidget):
         if radio_button.isChecked():
             self.logger.debug("Selected profile:{}".format(radio_button.pair))
             self.selected_profile_pair = radio_button.pair
+            self.selected_profile_name = radio_button.text()
             self.final_profile_pair = self.selected_profile_pair
+            self.final_profile_name = self.selected_profile_name
             return radio_button.pair
 
     @staticmethod

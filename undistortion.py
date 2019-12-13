@@ -19,6 +19,8 @@ default_chessboard_path2 = "undistort/data/chessboard/original4/*"
 default_img_points_path = profiles_folder + "/default_img"
 default_obj_points_path = profiles_folder + "/default_obj"
 
+default_profile_name = "default"
+
 # For selecting profile: each line as <idVendor>:<idProduct>,<img_points_path>,<obj_points_path>
 device_profile_mapping_file = profiles_folder + "/profile_mapping.txt"
 DELIMITER = ","
