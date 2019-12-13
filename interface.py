@@ -1,11 +1,13 @@
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import QPalette, QColor, QCursor
+import logging
+import os
+import signal
+
 from PyQt5.QtCore import *
+from PyQt5.QtGui import QPalette, QColor, QCursor
+from PyQt5.QtWidgets import *
+
 import main
 import undistortion
-import os
-import subprocess
-import logging
 
 # Options for profile selection
 NO_UNDISTORTION = "NO_UNDISTORTION"
@@ -20,30 +22,34 @@ PROFILES_CUR_CAM_ONLY = "PROFILES_CUR_CAM_ONLY"
 
 class MainWindow(QWidget):
 
-    def __init__(self, profiles_map: dict, resolution: int = main.RESOLUTION,
-                 enable_virtual_cam=main.ENABLE_VIRTUAL_CAM, debug=main.DEBUG):
+    def __init__(self, profiles_map, args):
         super(MainWindow, self).__init__(flags=Qt.Widget)
         self.left = 10
         self.top = 10
         self.width = 639
+        
+        self.layout = None
         self.list_widget = None
         self.profile_list_widget = list()
-        self.selected_profile_pair = None  # The option for selecting one from all profiles
-        self.final_profile_pair = None  # The final decision of selected profile
-        self.layout = None
-        self.all_profiles_map = profiles_map  # Dictionary:<device> => set( (pair of img_path, obj_path) )
-        self.resolution = resolution
-        self.enable_undistortion = False
-        self.child_pid = -1
         self.video_list = list()
-        self.input_video = -1
-        self.output_video = -1
-        self.enable_virtual_cam = enable_virtual_cam
-        self.debug = debug
-        self.logger = logging.getLogger("ATCV")
+        
+        self.all_profiles_map = profiles_map  # Dictionary:<device> => set( (pair of img_path, obj_path) )
+        self.input_video = main.CAM_DEVICE_NUMBER
+        self.output_video = main.CAP_DEVICE_NUMBER
+        self.resolution = main.RESOLUTION
+        self.enable_virtual_cam = main.ENABLE_VIRTUAL_CAM
+        self.enable_undistortion = main.ENABLE_UNDISTORTER
+        self.enable_beautifier = main.ENABLE_BEAUTIFIER
+        self.debug = True
+        self.benchmark = False
+        
         self.cam_device = None
         self.cap_device = None
-
+        self.child_pid = -1
+        self.selected_profile_pair = None  # The option for selecting one from all profiles
+        self.final_profile_pair = None  # The final decision of selected profile
+        self.logger = logging.getLogger("ATCV")
+        
         self.resize(self.width, self.sizeHint().height())
         self.init_interface()
 
@@ -57,15 +63,12 @@ class MainWindow(QWidget):
         self.enable_undistortion = False
         self.video_list = undistortion.UndistortionPreProcessor.get_videos_list()
 
-        # 1. Add Run button
-        self.add_run_button()
-
-        # 2. Add input and output source
+        # Add input and output source
         self.add_input_output_source()
         self.input_video = max(self.input_video, 0)
         self.output_video = max(self.output_video, 0)
 
-        # 3. Add radio buttons for profile selection
+        # Add radio buttons for profile selection
         self.add_title_label("Undistorter selection")
         radiobutton = QRadioButton("Not to use undistortion feature")
         radiobutton.setChecked(True)
@@ -80,13 +83,16 @@ class MainWindow(QWidget):
         radiobutton.status = SELECT_ONE_PROFILE
         self.add_level1_radio_button(radiobutton)
 
+        # Add Run button
+        self.add_run_button()
+
         MainWindow.add_list_widget(self.list_widget, self.layout)
 
         self.construct_profile_layout()
         self.auto_resize()
 
     def add_input_output_source(self):
-        input_label = self.add_title_label("Input")
+        input_label = self.add_title_label("Input Device (camera)")
         input_combo_box = QComboBox()
         input_combo_box.addItems(self.video_list)
         input_combo_box.currentTextChanged.connect(self.change_input_source)
@@ -100,7 +106,7 @@ class MainWindow(QWidget):
         input_label.setBuddy(input_combo_box)
         self.list_widget.append(input_combo_box)
 
-        output_label = self.add_title_label("Output")
+        output_label = self.add_title_label("Output Device (virtual camera)")
         output_combo_box = QComboBox()
         output_combo_box.addItems(self.video_list)
         output_combo_box.currentTextChanged.connect(self.change_output_source)
@@ -198,17 +204,31 @@ class MainWindow(QWidget):
         self.child_pid = os.fork()
         if self.child_pid == 0:
             self.cam_device, self.cap_device, frame_width, frame_height \
-                = main.set_up_devices(resolution=int(self.resolution), cam_device_number=self.input_video,
-                                      cap_device_number=self.output_video, enable_virtual_cam=self.enable_virtual_cam)
+                = main.configure_devices({
+                    'inp': self.input_video,
+                    'out': self.output_video,
+                    'res': self.resolution,
+                    'vcam': self.enable_virtual_cam,
+                })
 
             try:
-                main.process_video(cam_device=self.cam_device, cap_device=self.cap_device,
-                                   width=frame_width, height=frame_height, img_path=img_path,
-                                   obj_path=obj_path, enable_undistorter=self.enable_undistortion,
-                                   enable_virtual_cam=self.enable_virtual_cam, debug=self.debug)
+                main.process_video(
+                    self.cam_device, self.cap_device,
+                    frame_width, frame_height, 
+                    img_path, obj_path, 
+                    {
+                        'vcam': self.enable_virtual_cam,
+                        'undistorter': self.enable_undistortion,
+                        'beautifier': True,
+                        'benchmark': False,
+                        'debug': self.debug,
+                    }
+                )
             except Exception as e:
                 self.kill_main_process_video()
-                self.logger.error("Exception when processing frame:{}".format(e))
+                self.logger.error("Exception when processing frame: {}".format(e))
+        elif self.child_pid < 0:
+            self.logger.error("Error in forking a new process")
         else:
             MainWindow.delete_list_widget(self.list_widget)
             MainWindow.delete_list_widget(self.profile_list_widget)
@@ -291,8 +311,8 @@ class MainWindow(QWidget):
             self.kill_main_process_video()
 
     def kill_main_process_video(self):
-        if self.child_pid:
-            kill_main(self.child_pid)
+        if self.child_pid > 0:
+            os.kill(self.child_pid, signal.SIGKILL)
 
         if self.cam_device:
             del self.cam_device
@@ -301,14 +321,7 @@ class MainWindow(QWidget):
             self.cap_device.close()
 
 
-def kill_main(pid):
-    if pid:
-        kill_command = ["kill", "-9", str(pid)]
-        subprocess.Popen(kill_command)
-
-
-def initialize_ui(all_profiles_map: dict, resolution=main.RESOLUTION,
-                  enable_virtual_cam=main.ENABLE_VIRTUAL_CAM, debug=main.DEBUG):
+def initialize_ui(profiles_map, args):
     app = QApplication([])
 
     # Force the style to be the same on all OSs:
@@ -333,8 +346,7 @@ def initialize_ui(all_profiles_map: dict, resolution=main.RESOLUTION,
 
     app.setApplicationName("Augmenting Teleconferencing")
 
-    window = MainWindow(profiles_map=all_profiles_map, resolution=resolution,
-                        enable_virtual_cam=enable_virtual_cam, debug=debug)
+    window = MainWindow(profiles_map, args)
     window.show()
 
     app.exec_()
