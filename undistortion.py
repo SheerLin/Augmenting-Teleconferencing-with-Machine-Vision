@@ -405,7 +405,7 @@ class UndistortionPreProcessor:
         # Find the vendor id and product id of device
         driver_path = "/sys/class/video4linux/video" + str(cam_device_number) + "/device/input/"
         if not os.path.exists(driver_path):
-            logger.debug("Driver folder not exist: {}", driver_path)
+            logger.debug("Driver folder not exist: {}".format(driver_path))
             return device_vendor_product
 
         input_folder = ""
