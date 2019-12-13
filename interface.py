@@ -19,6 +19,7 @@ ALL_PROFILES = "ALL_PROFILES"
 PROFILES_ALL_ATTACHED_CAM = "PROFILES_ALL_ATTACHED_CAM"
 PROFILES_CUR_CAM_ONLY = "PROFILES_CUR_CAM_ONLY"
 
+RESOLUTIONS = ['1080p', '720p', '480p', '768p', '600p']
 
 class MainWindow(QWidget):
 
@@ -63,12 +64,65 @@ class MainWindow(QWidget):
         self.enable_undistortion = False
         self.video_list = undistortion.UndistortionPreProcessor.get_videos_list()
 
+        # Add Run button
+        self.add_run_button()
+
         # Add input and output source
         self.add_input_output_source()
-        self.input_video = max(self.input_video, 0)
-        self.output_video = max(self.output_video, 0)
+        
+        # Add resolution selection
+        self.add_resolution()
 
         # Add radio buttons for profile selection
+        self.add_distortion_profile()
+
+        MainWindow.add_list_widget(self.list_widget, self.layout)
+
+        self.construct_profile_layout()
+        self.auto_resize()
+
+    def add_input_output_source(self):
+        input_label = self.add_title_label("Input Device (camera)")
+        input_combo_box = QComboBox()
+        input_combo_box.addItems(self.video_list)
+        input_combo_box.currentTextChanged.connect(self.change_input_source)
+
+        input_index = input_combo_box.findText('video' + str(self.input_video), Qt.MatchFixedString)
+        if input_index >= 0:
+            input_combo_box.setCurrentIndex(input_index)
+        self.logger.debug('Initialized input source: video{}'.format(self.input_video))
+
+        input_label.setBuddy(input_combo_box)
+        self.list_widget.append(input_combo_box)
+
+        output_label = self.add_title_label("Output Device (virtual camera)")
+        output_combo_box = QComboBox()
+        output_combo_box.addItems(self.video_list)
+        output_combo_box.currentTextChanged.connect(self.change_output_source)
+
+        output_index = output_combo_box.findText('video' + str(self.output_video), Qt.MatchFixedString)
+        if output_index >= 0:
+            output_combo_box.setCurrentIndex(output_index)
+        self.logger.debug('Initialized output source: video{}'.format(self.output_video))
+
+        output_label.setBuddy(output_combo_box)
+        self.list_widget.append(output_combo_box)
+
+    def add_resolution(self):
+        label = self.add_title_label("Resolution of Output Video")
+        combo_box = QComboBox()
+        combo_box.addItems(RESOLUTIONS)
+        combo_box.currentTextChanged.connect(self.change_resolution)
+
+        index = combo_box.findText(str(self.resolution) + 'p', Qt.MatchFixedString)
+        if index >= 0:
+            combo_box.setCurrentIndex(index)
+        self.logger.debug('Initialized resolution: {}p'.format(self.resolution))
+
+        label.setBuddy(combo_box)
+        self.list_widget.append(combo_box)
+
+    def add_distortion_profile(self):
         self.add_title_label("Undistorter selection")
         radiobutton = QRadioButton("Not to use undistortion feature")
         radiobutton.setChecked(True)
@@ -83,42 +137,10 @@ class MainWindow(QWidget):
         radiobutton.status = SELECT_ONE_PROFILE
         self.add_level1_radio_button(radiobutton)
 
-        # Add Run button
-        self.add_run_button()
-
-        MainWindow.add_list_widget(self.list_widget, self.layout)
-
-        self.construct_profile_layout()
-        self.auto_resize()
-
-    def add_input_output_source(self):
-        input_label = self.add_title_label("Input Device (camera)")
-        input_combo_box = QComboBox()
-        input_combo_box.addItems(self.video_list)
-        input_combo_box.currentTextChanged.connect(self.change_input_source)
-
-        try:
-            self.input_video = int(input_combo_box.currentText().strip("video"))
-        except ValueError:
-            self.input_video = 0
-        self.logger.debug('Initialized input source: video{}'.format(self.input_video))
-
-        input_label.setBuddy(input_combo_box)
-        self.list_widget.append(input_combo_box)
-
-        output_label = self.add_title_label("Output Device (virtual camera)")
-        output_combo_box = QComboBox()
-        output_combo_box.addItems(self.video_list)
-        output_combo_box.currentTextChanged.connect(self.change_output_source)
-
-        try:
-            self.output_video = int(output_combo_box.currentText().strip("video"))
-        except ValueError:
-            self.output_video = 0
-        self.logger.debug('Initialized output source: video{}'.format(self.output_video))
-
-        output_label.setBuddy(output_combo_box)
-        self.list_widget.append(output_combo_box)
+    def add_level1_radio_button(self, button: QRadioButton):
+        button.toggled.connect(self.change_distortion_profile)
+        button.setCursor(QCursor(Qt.PointingHandCursor))
+        self.list_widget.append(button)
 
     def change_input_source(self, text: str):
         if text and "video" in text:
@@ -130,6 +152,33 @@ class MainWindow(QWidget):
             self.output_video = int(text.strip("video"))
             self.logger.debug("Update output source: video{}".format(self.output_video))
 
+    def change_resolution(self, text: str):
+        if text and 'p' in text:
+            self.resolution = int(text.strip('p'))
+            self.logger.debug("Update resolution: {}p".format(self.resolution))
+
+    def change_distortion_profile(self):
+        radio_button = self.sender()
+        if radio_button.isChecked():
+            self.logger.debug("Undistorter selection is:{}".format(radio_button.status))
+
+            if radio_button.status == SELECT_ONE_PROFILE:
+                MainWindow.add_list_widget(self.profile_list_widget, self.layout)
+                self.final_profile_pair = self.selected_profile_pair
+            else:
+                MainWindow.delete_list_widget(self.profile_list_widget)
+
+                if radio_button.status == DEFAULT_PROFILE:
+                    self.final_profile_pair = undistortion.get_default_profile_pair()
+                    self.logger.debug("Select default profile:{}".format(self.final_profile_pair))
+
+            if radio_button.status == NO_UNDISTORTION:
+                self.enable_undistortion = False
+            else:
+                self.enable_undistortion = True
+
+        self.auto_resize()
+        
     def add_title_label(self, text: str):
         label = QLabel(text)
         self.list_widget.append(label)
@@ -161,33 +210,6 @@ class MainWindow(QWidget):
         if list_widget and len(list_widget) > 0:
             for cur_profile_list_widget in list_widget:
                 cur_profile_list_widget.setParent(None)
-
-    def add_level1_radio_button(self, button: QRadioButton):
-        button.toggled.connect(self.on_click_radio)
-        button.setCursor(QCursor(Qt.PointingHandCursor))
-        self.list_widget.append(button)
-
-    def on_click_radio(self):
-        radio_button = self.sender()
-        if radio_button.isChecked():
-            self.logger.debug("Undistorter selection is:{}".format(radio_button.status))
-
-            if radio_button.status == SELECT_ONE_PROFILE:
-                MainWindow.add_list_widget(self.profile_list_widget, self.layout)
-                self.final_profile_pair = self.selected_profile_pair
-            else:
-                MainWindow.delete_list_widget(self.profile_list_widget)
-
-                if radio_button.status == DEFAULT_PROFILE:
-                    self.final_profile_pair = undistortion.get_default_profile_pair()
-                    self.logger.debug("Select default profile:{}".format(self.final_profile_pair))
-
-            if radio_button.status == NO_UNDISTORTION:
-                self.enable_undistortion = False
-            else:
-                self.enable_undistortion = True
-
-        self.auto_resize()
 
     def auto_resize(self):
         self.resize(self.width, self.sizeHint().height())
