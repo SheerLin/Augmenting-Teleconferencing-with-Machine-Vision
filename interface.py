@@ -28,8 +28,8 @@ class MainWindow(QWidget):
         self.width = 639
         self.list_widget = None
         self.profile_list_widget = list()
-        # TODO - rerun need to reset this
-        self.selected_profile_pair = None
+        self.selected_profile_pair = None  # The option for selecting one from all profiles
+        self.final_profile_pair = None  # The final decision of selected profile
         self.layout = None
         self.all_profiles_map = profiles_map  # Dictionary:<device> => set( (pair of img_path, obj_path) )
         self.resolution = resolution
@@ -128,7 +128,7 @@ class MainWindow(QWidget):
 
     def add_run_button(self):
         run_button = QPushButton("Run")
-        run_button.clicked.connect(self.on_click_next)
+        run_button.clicked.connect(self.on_click_run)
         run_button.setCursor(QCursor(Qt.PointingHandCursor))
         self.list_widget.append(run_button)
 
@@ -165,12 +165,13 @@ class MainWindow(QWidget):
 
             if radio_button.status == SELECT_ONE_PROFILE:
                 MainWindow.add_list_widget(self.profile_list_widget, self.layout)
+                self.final_profile_pair = self.selected_profile_pair
             else:
                 MainWindow.delete_list_widget(self.profile_list_widget)
 
                 if radio_button.status == DEFAULT_PROFILE:
-                    self.selected_profile_pair = undistortion.get_default_profile_pair()
-                    self.logger.debug("Select default profile:{}".format(self.selected_profile_pair))
+                    self.final_profile_pair = undistortion.get_default_profile_pair()
+                    self.logger.debug("Select default profile:{}".format(self.final_profile_pair))
 
             if radio_button.status == NO_UNDISTORTION:
                 self.enable_undistortion = False
@@ -183,11 +184,11 @@ class MainWindow(QWidget):
         self.resize(self.width, self.sizeHint().height())
         self.setMaximumHeight(self.sizeHint().height())
 
-    def on_click_next(self):
+    def on_click_run(self):
         img_path = None
         obj_path = None
-        if self.selected_profile_pair:
-            img_path, obj_path = self.selected_profile_pair
+        if self.final_profile_pair:
+            img_path, obj_path = self.final_profile_pair
             img_path += undistortion.npy_file_postfix
             obj_path += undistortion.npy_file_postfix
 
@@ -214,30 +215,43 @@ class MainWindow(QWidget):
     def construct_profile_layout(self):
         if not self.profile_list_widget:
             self.profile_list_widget = list()
+
+            layout = QVBoxLayout()
+            cur_box = QGroupBox()
+            set_default = False
             for cur_device, cur_tuple_set in self.all_profiles_map.items():
                 device_name = undistortion.UndistortionPreProcessor.get_usb_device(device_id=cur_device)
                 if device_name and len(device_name) > 0:
-                    cur_box = QGroupBox(device_name)
+                    cur_device_label = QLabel(device_name)
                 else:
-                    cur_box = QGroupBox(cur_device + "(Detached)")
-                layout = QVBoxLayout()
+                    cur_device_label = QLabel(cur_device + "(Detached)")
+
+                layout.addWidget(cur_device_label, alignment=Qt.AlignLeft)
 
                 for cur_tuple in cur_tuple_set:
                     radio_button = QRadioButton(str(cur_tuple[0]))
                     radio_button.pair = (cur_tuple[1], cur_tuple[2])
                     radio_button.toggled.connect(self.on_select_pair)
-                    radio_button.setChecked(False)
+
+                    if not set_default:
+                        radio_button.setChecked(True)
+                        self.selected_profile_pair = radio_button.pair
+                        set_default = True
+                    else:
+                        radio_button.setChecked(False)
+
                     layout.addWidget(radio_button, alignment=Qt.AlignLeft)
 
-                cur_box.setLayout(layout)
+            cur_box.setLayout(layout)
 
-                self.profile_list_widget.append(cur_box)
+            self.profile_list_widget.append(cur_box)
 
     def on_select_pair(self):
         radio_button = self.sender()
         if radio_button.isChecked():
             self.logger.debug("Selected profile:{}".format(radio_button.pair))
             self.selected_profile_pair = radio_button.pair
+            self.final_profile_pair = self.selected_profile_pair
             return radio_button.pair
 
     @staticmethod

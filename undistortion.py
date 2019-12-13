@@ -2,7 +2,6 @@
 import cv2
 import glob
 import os
-import time
 import numpy as np
 import subprocess
 import shutil
@@ -260,7 +259,6 @@ class Undistortion:
 
 class UndistortionPreProcessor:
     def __init__(self, cam_device_number: int = 0):
-        # TODO - can remove this as this could be the output of the function
         self.device_to_profile = dict()  # Profile for selecting profile: <device> -> [list of (img path,obj path)]
         self.cam_device_number = cam_device_number
         self.logger = logging.getLogger("ATCV")
