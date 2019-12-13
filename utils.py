@@ -4,6 +4,9 @@ import cv2
 import numpy as np
 import scipy.spatial
 
+def str2bool(x):
+    return x.lower() in ('true')
+    
 def draw_line(src, line, color):
     for col1, row1, col2, row2 in line:
         cv2.line(src, (col1, row1), (col2, row2), color, 3, cv2.LINE_AA)

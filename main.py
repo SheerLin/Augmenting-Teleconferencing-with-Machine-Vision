@@ -2,12 +2,21 @@
 
 import argparse
 import fcntl
-import sys
-import os
 import logging
+import os
 import platform
+import sys
 
 import cv2
+
+import engine
+import interface
+import undistortion
+from utils import *
+
+CAM_DEVICE_NUMBER = 0 # input device
+CAP_DEVICE_NUMBER = 0 # output device
+RESOLUTION = 1080
 
 ENABLE_VIRTUAL_CAM = False
 ENABLE_GUI = False
@@ -18,22 +27,10 @@ ENABLE_BEAUTIFIER = True
 BENCHMARK = False
 DEBUG = False
 
-import engine
-import undistortion
-import interface
-
-CAM_DEVICE_NUMBER = 0 # input device
-CAP_DEVICE_NUMBER = 0 # output device
-RESOLUTION = 1080
-
-
 FORMAT = '%(asctime)-15s %(name)s (%(levelname)s) > %(message)s'
 logging.basicConfig(format=FORMAT)
 logger = logging.getLogger('ATCV')
 
-
-def str2bool(x):
-    return x.lower() in ('true')
 
 '''
 @brief Parses command line arguments.
@@ -46,13 +43,13 @@ def parse_args():
     parser.add_argument('-i', '--inp', type=int, default=CAM_DEVICE_NUMBER, help='CAM_DEVICE_NUMBER: Camera input device (number, eg: 0)')
     parser.add_argument('-o', '--out', type=int, default=CAP_DEVICE_NUMBER, help='CAP_DEVICE_NUMBER: Virtual camera output device (number, eg: 1)')
     parser.add_argument('-r', '--res', type=int, default=RESOLUTION, help='RESOLUTION: Resolution for output (number, [1080, 720, 480, 768, 600])')
-    parser.add_argument('-v', '--vcam', type=str2bool, default=ENABLE_VIRTUAL_CAM, help='ENABLE_VIRTUAL_CAM: Enable Virtual camera output (bool, [true, false])')
-    parser.add_argument('-g', '--gui', type=str2bool, default=ENABLE_GUI, help='ENABLE_GUI: Enable GUI mode (bool, [true, false])')
-    parser.add_argument('-ed', '--undistorter', type=str2bool, default=ENABLE_UNDISTORTER, help='ENABLE_UNDISTORTER: Enable undistorter component (bool, [true, false])')
-    parser.add_argument('-eb', '--beautifier', type=str2bool, default=ENABLE_BEAUTIFIER, help='ENABLE_BEAUTIFIER: Enable beautifier component (bool, [true, false])')
-    parser.add_argument('-b', '--benchmark', type=str2bool, default=BENCHMARK, help='BENCHAMRK: Enable benchmark mode (bool, [true, false])')
-    parser.add_argument('-d', '--debug', type=str2bool, default=DEBUG, help='DEBUG: Enable debugging mode (bool, [true, false])')
-    parser.add_argument('-p', '--profile', type=str, default=None, help='PROFILE: The profile name of undistorter when enabled (str, eg: "default")')
+    parser.add_argument('-v', '--vcam', type=str2bool, default=ENABLE_VIRTUAL_CAM, help='ENABLE_VIRTUAL_CAM: Enable Virtual camera output (bool, [t, true, f, false])')
+    parser.add_argument('-g', '--gui', type=str2bool, default=ENABLE_GUI, help='ENABLE_GUI: Enable GUI mode (bool, [t, true, f, false])')
+    parser.add_argument('-ed', '--undistorter', type=str2bool, default=ENABLE_UNDISTORTER, help='ENABLE_UNDISTORTER: Enable undistorter component (bool, [t, true, f, false])')
+    parser.add_argument('-p', '--profile', type=str, default=None, help='PROFILE: Name of undistorter profile (str, eg: default)')
+    parser.add_argument('-eb', '--beautifier', type=str2bool, default=ENABLE_BEAUTIFIER, help='ENABLE_BEAUTIFIER: Enable beautifier component (bool, [t, true, f, false])')
+    parser.add_argument('-b', '--benchmark', type=str2bool, default=BENCHMARK, help='BENCHAMRK: Enable benchmark mode (bool, [t, true, f, false])')
+    parser.add_argument('-d', '--debug', type=str2bool, default=DEBUG, help='DEBUG: Enable debugging mode (bool, [t, true, f, false])')
 
     args = parser.parse_args()
     return args
@@ -228,6 +225,7 @@ def process_video(cam_device, cap_device, width, height, img_path, obj_path, arg
     enable_beautifier = args['beautifier']
     benchmark = args['benchmark']
     debug = args['debug']
+    show_image = debug or not enable_virtual_cam
     
     eng = engine.Engine({
         'width': width, 
@@ -236,6 +234,7 @@ def process_video(cam_device, cap_device, width, height, img_path, obj_path, arg
         'obj_path': obj_path,
         'enable_undistorter': enable_undistorter,
         'enable_beautifier': enable_beautifier,
+        'show_image': show_image
     }, benchmark, debug)
 
     while True:
@@ -253,7 +252,7 @@ def process_video(cam_device, cap_device, width, height, img_path, obj_path, arg
             logger.error(e)
         
         # Break on `escape` press
-        if cv2.waitKey(1) == 27:
+        if show_image and cv2.waitKey(1) == 27:
             break
 
 
@@ -277,8 +276,6 @@ if __name__== '__main__':
     if enable_virtual_cam:
         logger.info('CAP_DEVICE_NUMBER: {}'.format(cap_device_number))
     logger.info('RESOLUTION: {}'.format(resolution))
-    if enable_undistorter and profile:
-        logger.info('PROFILE: {}'.format(profile))
 
     cam_device = None
     cap_device = None

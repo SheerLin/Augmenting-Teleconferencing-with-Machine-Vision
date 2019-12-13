@@ -11,8 +11,6 @@ import undistortion
 
 SAMPLE_FREQ = 10
 MEAN_LENGTH  = 10
-BENCHMARK = True
-SHOW_IMAGE = True
 
 class Engine:
 
@@ -29,6 +27,7 @@ class Engine:
         self.obj_path = params['obj_path']
         self.enable_undistorter = params['enable_undistorter']
         self.enable_beautifier = params['enable_beautifier']
+        self.show_image = params['show_image']
         
         # TODO: Closeness and Center can change after undistortion
         diag = int(math.sqrt(self.width**2 + self.height**2))
@@ -41,9 +40,10 @@ class Engine:
         }, benchamark, debug)
 
         if self.enable_undistorter:
-            self.undistorter = undistortion.Undistortion(
-                img_points_path=self.img_path, obj_points_path=self.obj_path, debug=debug
-            )
+            self.undistorter = undistortion.Undistortion({
+                'img_path': self.img_path, 
+                'obj_path': self.obj_path,
+            }, debug)
         
         if self.enable_beautifier:
             self.beautifier = beautifier.Beautifier({}, debug)
@@ -55,7 +55,6 @@ class Engine:
         self.run_post_sum = np.zeros((self.height, self.width, 3))
 
         self.debug = debug
-        self.show_image = debug
 
     def average(self, src, run, run_sum):
         if len(run) == MEAN_LENGTH:
@@ -118,5 +117,5 @@ class Engine:
 
         if self.show_image:
             show = np.hstack([orig, src])
-            # cv2.imshow('Video', show)
+            cv2.imshow('Video', show)
         return src

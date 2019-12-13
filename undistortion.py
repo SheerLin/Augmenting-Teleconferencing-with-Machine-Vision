@@ -31,11 +31,12 @@ logger = logging.getLogger("ATCV")
 
 
 class Undistortion:
-    def __init__(self, img_points_path=None, obj_points_path=None, debug=main.DEBUG):
+
+    def __init__(self, params, debug):
         self.logger = logging.getLogger("ATCV")
 
-        self.img_points_path = img_points_path
-        self.obj_points_path = obj_points_path
+        self.img_points_path = params['img_path']
+        self.obj_points_path = params['obj_path']
 
         # TO be initialized:
         # Arrays to store object points and image points from all the images.
@@ -222,13 +223,6 @@ class Undistortion:
         h, w = image.shape[:2]
         new_camera_mtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
 
-        if self.show_image:
-            cv2.namedWindow("Before undistortion", self.imshow_size)
-            try:
-                cv2.imshow("Before undistortion", image)
-            except Exception as e:
-                self.logger.error("Display(Before undistortion) error:{}".format(e))
-
         if not self.default_remap:
             dst = cv2.undistort(image, mtx, dist, None, new_camera_mtx)
         else:
@@ -236,9 +230,9 @@ class Undistortion:
             dst = cv2.remap(image, mapx, mapy, cv2.INTER_LINEAR)
 
         if self.show_image:
-            cv2.namedWindow("After undistortion", self.imshow_size)
+            cv2.namedWindow("Undistorter", self.imshow_size)
             try:
-                cv2.imshow("After undistortion", dst)
+                cv2.imshow("Undistorter", dst)
             except Exception as e:
                 self.logger.error("Display(After undistortion) error:{}".format(e))
 
@@ -246,12 +240,6 @@ class Undistortion:
             # crop the image
             x, y, w, h = roi
             dst = dst[y:y + h, x:x + w]
-            if self.show_image:
-                cv2.namedWindow("crop", self.imshow_size)
-                try:
-                    cv2.imshow("crop", dst)
-                except Exception as e:
-                    self.logger.error("Display(crop) error:{}".format(e))
 
         return dst
 

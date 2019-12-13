@@ -55,8 +55,8 @@ class Extractor:
         # TODO check HUE space
         # Filter out other colors
         src = src_clahe
-        delta = 30 # 60
-        m = 1 # 1.5
+        delta = 50
+        m = 1.5
         
         avg = self.get_avg_color_center(
             src, center_x, center_y, center_box_w, center_box_h
@@ -72,7 +72,7 @@ class Extractor:
         src_gray = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
 
         # Erosion followed by Dilation (Opening Morph)
-        # Reduces noise
+        # Reduce noise
         morph = src_gray
         kernel = np.ones((3, 3), np.uint8)
         iterations = 3
@@ -333,7 +333,7 @@ class Extractor:
         src_a, dims = self.detect_wb_contour(src)
         src_b, points = self.detect_wb_edges(src, dims)
         if self.show_image:
-            cv2.imshow('Processing', src_b)
+            cv2.imshow('Extractor', src_b)
         
         if points is not None:
             self.update_points(points, dims)

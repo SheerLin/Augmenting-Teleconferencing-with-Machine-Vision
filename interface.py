@@ -250,10 +250,10 @@ class MainWindow(QWidget):
             obj_path += undistortion.npy_file_postfix
 
         if platform.system() == "Darwin":
-
-            cmd = "python3 main.py -g f -d " + str(self.debug) + " -v f -r " + str(self.resolution) + " -i 0"
-            if self.enable_undistortion and self.final_profile_name:
-                cmd += " -ed True -p \"" + self.final_profile_name + "\""
+            cmd = "python3 main.py -i {} -o {} -r {} -v f -g f -ed {} -p {} -eb {} -d {}" \
+                .format(self.input_video, self.output_video, self.resolution, 
+                        self.enable_undistortion, self.final_profile_name, self.enable_beautifier,
+                        self.debug)
             p = subprocess.Popen(cmd, shell=True)
             self.child_pid = p.pid
 
