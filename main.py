@@ -5,6 +5,7 @@ import fcntl
 import sys
 import os
 import logging
+import platform
 
 import cv2
 
@@ -259,7 +260,7 @@ if __name__== '__main__':
     cam_device_number = args.inp
     cap_device_number = args.out
     resolution = args.res
-    enable_virtual_cam = args.vcam
+    enable_virtual_cam = args.vcam and platform.system() == "Linux"
     enable_gui = args.gui
     enable_undistorter = args.undistorter
     enable_beautifier = args.beautifier
