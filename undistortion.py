@@ -262,8 +262,8 @@ class UndistortionPreProcessor:
         # DEBUG
         self.find_all_device = True
 
-    def __call__(self):
-        return self.__select_profile()
+    def __call__(self, profile: str):
+        return self.__select_profile(profile)
 
     def init_profile_mapping(self):
         """Reading from mapping profile to initialize self.device_to_profile
@@ -293,11 +293,12 @@ class UndistortionPreProcessor:
                     self.device_to_profile[current_device].append(
                         (cur_profile_name, current_img_path, current_obj_path))
 
-            self.logger.debug("After initialize self.device_to_profile: {}", self.device_to_profile)
+            self.logger.debug("After initialize self.device_to_profile: {}".format(self.device_to_profile))
 
         return self.device_to_profile
 
-    def __select_profile(self):
+    # TODO
+    def __select_profile(self, profile: str):
         """
         Function:
             1. Find current usb devices and check if it matches with the existing mapping
@@ -359,12 +360,12 @@ class UndistortionPreProcessor:
                         self.logger.debug("Single profile pair found!!")
                         selected_img_path = str(list(the_tuples)[0][1])
                         selected_obj_path = str(list(the_tuples)[0][2])
-                        return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix, enable_undistorter
+                        return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix, \
+                               enable_undistorter
 
             # 5. If there are multiple available profile pairs, let user select
             if not no_profile:
-                id_to_profile = UndistortionPreProcessor.profile_map_formatter(available_profiles_map,
-                                                                               "available_profiles_map")
+                id_to_profile = UndistortionPreProcessor.profile_map_formatter(available_profiles_map)
                 while True:
                     user_selected = input()
                     if user_selected and len(user_selected) > 0 and str(user_selected).isdigit() \
@@ -372,7 +373,8 @@ class UndistortionPreProcessor:
                         self.logger.debug("Valid Input:{} {}".format(user_selected, id_to_profile[int(user_selected)]))
                         selected_img_path = str(id_to_profile[int(user_selected)][1])
                         selected_obj_path = str(id_to_profile[int(user_selected)][2])
-                        return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix, enable_undistorter
+                        return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix, \
+                               enable_undistorter
 
                     # Enable default profiling
                     if str(user_selected).lower() == default_profile_symbol:
@@ -415,13 +417,13 @@ class UndistortionPreProcessor:
 
         driver_path += (input_folder + "/id")
         if not os.path.exists(driver_path):
-            logger.error("Driver input id folder not exist: {}", driver_path)
+            logger.error("Driver input id folder not exist: {}".format(driver_path))
             return device_vendor_product
 
         # Check vendor id
         vendor_path = driver_path + "/vendor"
         if not os.path.exists(vendor_path):
-            logger.error("Vendor file not exist: {}", vendor_path)
+            logger.error("Vendor file not exist: {}".format(vendor_path))
             return device_vendor_product
 
         id_vendor = ""
@@ -431,7 +433,7 @@ class UndistortionPreProcessor:
         # Check product id
         product_path = driver_path + "/product"
         if not os.path.exists(product_path):
-            logger.error("Product file not exist: {}", product_path)
+            logger.error("Product file not exist: {}".format(product_path))
             return device_vendor_product
 
         id_product = ""

@@ -25,6 +25,7 @@ ENABLE_BEAUTIFIER = True
 
 BENCHMARK = False
 DEBUG = False
+PROFILE = "default"
 FORMAT = '%(asctime)-15s %(name)s (%(levelname)s) > %(message)s'
 logging.basicConfig(format=FORMAT)
 logger = logging.getLogger('ATCV')
@@ -50,6 +51,7 @@ def parse_args():
     parser.add_argument('-eb', '--beautifier', type=str2bool, default=ENABLE_BEAUTIFIER, help='ENABLE_BEAUTIFIER: Enable beautifier component (bool, [true, false])')
     parser.add_argument('-b', '--benchmark', type=str2bool, default=BENCHMARK, help='BENCHAMRK: Enable benchmark mode (bool, [true, false])')
     parser.add_argument('-d', '--debug', type=str2bool, default=DEBUG, help='DEBUG: Enable debugging mode (bool, [true, false])')
+    parser.add_argument('-p', '--profile', type=str, default=PROFILE, help='PROFILE: The profile name of undistorter when enabled (str, eg: "default")')
 
     args = parser.parse_args()
     return args
@@ -266,6 +268,7 @@ if __name__== '__main__':
     enable_beautifier = args.beautifier
     benchmark = args.benchmark
     debug = args.debug
+    profile = args.profile
     
     log_level = logging.WARNING if not debug else logging.DEBUG
     logger.setLevel(log_level)
@@ -273,6 +276,8 @@ if __name__== '__main__':
     if enable_virtual_cam:
         logger.info('CAP_DEVICE_NUMBER: {}'.format(cap_device_number))
     logger.info('RESOLUTION: {}'.format(resolution))
+    if enable_undistorter and profile:
+        logger.info('PROFILE: {}'.format(profile))
 
     cam_device = None
     cap_device = None
@@ -299,7 +304,7 @@ if __name__== '__main__':
         img_path = None
         obj_path = None
         if enable_undistorter:
-            img_path, obj_path, enable_undistorter = undistortion_preprocessor()
+            img_path, obj_path, enable_undistorter = undistortion_preprocessor(profile)
 
         process_video(
             cam_device, cap_device,
