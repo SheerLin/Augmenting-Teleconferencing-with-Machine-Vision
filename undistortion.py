@@ -259,9 +259,6 @@ class UndistortionPreProcessor:
         self.cam_device_number = cam_device_number
         self.logger = logging.getLogger("ATCV")
 
-        # DEBUG
-        self.find_all_device = True
-
     def __call__(self, profile: str):
         return self.__select_profile(profile)
 
@@ -301,93 +298,63 @@ class UndistortionPreProcessor:
     def __select_profile(self, profile: str):
         """
         Function:
-            1. Find current usb devices and check if it matches with the existing mapping
-            2. Find the corresponding profile according to devices, if multiple available devices found
-            Let user select with device(profile) to be used
+            If profile name is not provided in the command line, then Let user select with profile to be used
 
         Returns:
             Path to img points npy file (with post fix)
             Path to obj points npy file (with post fix)
         """
-        self.device_name = UndistortionPreProcessor.find_device_id_by_cam_device_number(self.cam_device_number)
 
         enable_undistorter = True
 
-        self.logger.info("Current device:{}".format(self.device_name))
-
         if len(self.device_to_profile.keys()) > 0:
 
-            # 1. Find out list of devices
-            # TODO[fusion]  - uncomment this
-            list_of_devices = UndistortionPreProcessor.get_usb_devices()
+            if platform.system() == "Linux":
+                self.device_name = UndistortionPreProcessor.find_device_id_by_cam_device_number(self.cam_device_number)
+                self.logger.info("Current input camera device:{}".format(self.device_name))
 
-            # TODO[fusion]  - remove this
-            # list_of_devices = ['05a3:9230', '046d:0837']
-
-            # 2. Iterate through the list and find if the current device has profile
+            # 1. Iterate through the list and find if the current device has profile
             available_profiles_map = dict()
-            for current_device in list_of_devices:
-                if current_device in self.device_to_profile:
+            for current_device in self.device_to_profile.keys():
+                if current_device not in available_profiles_map:
+                    available_profiles_map[current_device] = set()
 
-                    if self.find_all_device or not self.device_name or current_device == self.device_name:
-                        if current_device not in available_profiles_map:
-                            available_profiles_map[current_device] = set()
+                for profile_tuple in self.device_to_profile[current_device]:
+                    tmp_img_path = str(profile_tuple[1])
+                    tmp_obj_path = str(profile_tuple[2])
+                    if tmp_img_path and os.path.exists(tmp_img_path + npy_file_postfix) \
+                            and tmp_obj_path and os.path.exists(tmp_obj_path + npy_file_postfix):
+                        available_profiles_map[current_device].add(profile_tuple)
 
-                        for profile_tuple in self.device_to_profile[current_device]:
-                            tmp_img_path = str(profile_tuple[1])
-                            tmp_obj_path = str(profile_tuple[2])
-                            if tmp_img_path and os.path.exists(tmp_img_path + npy_file_postfix) \
-                                    and tmp_obj_path and os.path.exists(tmp_obj_path + npy_file_postfix):
-                                available_profiles_map[current_device].add(profile_tuple)
-
-            # 3. If there is no  available profile pairs, pass
+            # 2. If there is no available profile pairs, pass
             if len(available_profiles_map) == 0:
                 self.logger.info("Skip select profile: No available device in profile mapping")
                 pass
 
-            # 4. If there is only one available profile pair, return it
-            no_profile = False
-            if len(available_profiles_map) == 1:
+            # 3. If there are multiple available profile pairs, let user select
+            id_to_profile = UndistortionPreProcessor.profile_map_formatter(available_profiles_map)
+            while True:
+                user_selected = input()
+                if user_selected and len(user_selected) > 0 and str(user_selected).isdigit() \
+                        and int(user_selected) in id_to_profile:
+                    self.logger.debug("Valid Input:{} {}".format(user_selected, id_to_profile[int(user_selected)]))
+                    selected_img_path = str(id_to_profile[int(user_selected)][1])
+                    selected_obj_path = str(id_to_profile[int(user_selected)][2])
+                    return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix, \
+                           enable_undistorter
 
-                for the_only_device, the_tuples in available_profiles_map.items():
-                    if len(the_tuples) == 0:
-                        self.logger.debug("Skip select profile: No available profile path found for device {}",
-                                          the_only_device)
-                        no_profile = True
-                        break
+                # Enable default profiling
+                if str(user_selected).lower() == default_profile_symbol:
+                    break
 
-                    elif len(the_tuples) == 1:
-                        self.logger.debug("Single profile pair found!!")
-                        selected_img_path = str(list(the_tuples)[0][1])
-                        selected_obj_path = str(list(the_tuples)[0][2])
-                        return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix, \
-                               enable_undistorter
+                #  Enable skipping undistortion
+                elif str(user_selected).lower() == none_profile_symbol:
+                    enable_undistorter = False
+                    self.logger.info("Skipping undistortion!")
+                    break
 
-            # 5. If there are multiple available profile pairs, let user select
-            if not no_profile:
-                id_to_profile = UndistortionPreProcessor.profile_map_formatter(available_profiles_map)
-                while True:
-                    user_selected = input()
-                    if user_selected and len(user_selected) > 0 and str(user_selected).isdigit() \
-                            and int(user_selected) in id_to_profile:
-                        self.logger.debug("Valid Input:{} {}".format(user_selected, id_to_profile[int(user_selected)]))
-                        selected_img_path = str(id_to_profile[int(user_selected)][1])
-                        selected_obj_path = str(id_to_profile[int(user_selected)][2])
-                        return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix, \
-                               enable_undistorter
-
-                    # Enable default profiling
-                    if str(user_selected).lower() == default_profile_symbol:
-                        break
-
-                    #  Enable skipping undistortion
-                    elif str(user_selected).lower() == none_profile_symbol:
-                        enable_undistorter = False
-                        self.logger.info("Skipping undistortion!")
-                        break
-
-                    else:
-                        self.logger.error("Invalid input: {}", user_selected)
+                else:
+                    self.logger.error("Invalid input: {}", user_selected)
 
         if default_img_points_path \
                 and os.path.isfile(default_img_points_path + npy_file_postfix) \
@@ -447,7 +414,6 @@ class UndistortionPreProcessor:
     @staticmethod
     def get_usb_devices():
         """Get the list of <idVendor>:<idProduct> from cmd lsusb"""
-        # TODO - MAC compatibility
         cmd = "lsusb | awk '{print $6 }'"
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         output = p.communicate()[0].decode("utf-8")
@@ -489,11 +455,11 @@ class UndistortionPreProcessor:
             output = p.communicate()[0].decode("utf-8")
             usb_devices = str(output).splitlines()
             if not usb_devices or len(usb_devices) == 0:
-                return []
+                return device_id + "(Detached)"
             else:
                 return usb_devices[0]
         else:
-            return device_id
+            return device_id + "(Detached)"
 
     @staticmethod
     def get_videos_list():

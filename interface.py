@@ -302,10 +302,7 @@ class MainWindow(QWidget):
             set_default = False
             for cur_device, cur_tuple_set in self.all_profiles_map.items():
                 device_name = undistortion.UndistortionPreProcessor.get_usb_device(device_id=cur_device)
-                if device_name and len(device_name) > 0:
-                    cur_device_label = QLabel(device_name)
-                else:
-                    cur_device_label = QLabel(cur_device + "(Detached)")
+                cur_device_label = QLabel(device_name)
 
                 layout.addWidget(cur_device_label, alignment=Qt.AlignLeft)
 
