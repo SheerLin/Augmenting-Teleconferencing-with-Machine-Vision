@@ -24,6 +24,7 @@ device_profile_mapping_file = profiles_folder + "/profile_mapping.txt"
 DELIMITER = ","
 default_profile_symbol = "d"
 none_profile_symbol = "n"
+logger = logging.getLogger("ATCV")
 
 
 # General steps
@@ -67,20 +68,17 @@ class Undistortion:
             pass
         else:
             self.skip_undistort = True
-            print("No available profile. Skip undistortion.")
+            self.logger.info("No available profile. Skip undistortion.")
             return False
 
-        print("Use img_points_path:", self.img_points_path)
-        print("Use obj_points_path:", self.obj_points_path)
+        self.logger.info("Use img_points_path:{}".format(self.img_points_path))
+        self.logger.info("Use obj_points_path:{}".format(self.obj_points_path))
 
         self.img_points, self.obj_points = Undistortion.deserialize(self.img_points_path, self.obj_points_path)
 
     @staticmethod
     def init_img_obj_points_from_chessboards(init_chessboard_path):
         """Get image points and object points from the pictures in the chessboard_path"""
-        start_time = time.time()
-        print("in __init_img_obj_points_from_chessboards")
-
         # termination criteria
         criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
@@ -94,10 +92,19 @@ class Undistortion:
         img_points = []
 
         if len(images) == 0:
-            # TODO[low] - add asterisk manually
-            print("NO pictures under chessboard path:", init_chessboard_path)
-            print("Chessboard path should be in the format of:<relative path>/*")
-            exit()
+            # Add asterisk manually and retry
+            if "*" not in init_chessboard_path:
+                if init_chessboard_path.endswith("/"):
+                    init_chessboard_path += "*"
+                else:
+                    init_chessboard_path += "/*"
+
+                images = glob.glob(init_chessboard_path)
+
+            if len(images) == 0:
+                logger.error("NO pictures under chessboard path:{}".format(init_chessboard_path))
+                logger.error("Chessboard path should be in the format of:<relative path>/*")
+                exit()
 
         for file_name in images:
             img = cv2.imread(file_name)
@@ -113,20 +120,14 @@ class Undistortion:
                 corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
                 img_points.append(corners2)
 
-                # Draw and display the corners
-                # img = cv2.drawChessboardCorners(img, (7, 6), corners2, ret)
-                # cv2.imshow('img', img)
-                # cv2.waitKey(100)
-
                 valid_pics += 1
-                print("Initialized from ", valid_pics, "pictures:", file_name)
+                logger.debug("Initialized from {} pictures:{}".format(valid_pics, file_name))
             else:
-                print("Failed to findChessboardCorners. Skip current image:", file_name)
+                logger.debug("Failed to findChessboardCorners. Skip current image:{}".format(file_name))
                 os.remove(file_name)
 
-        elapsed_time = time.time() - start_time
         cv2.destroyAllWindows()
-        print("Collect 3d point from ", valid_pics, " pictures:", elapsed_time)
+        logger.debug("Collect 3d point from {} pictures.".format(valid_pics))
 
         return img_points, obj_points
 
@@ -145,12 +146,12 @@ class Undistortion:
     def save_device_to_profile(devices: list, img_points_path, obj_points_path, cur_profile_name: str):
         """Write to device_profile_mapping_file file"""
 
-        print("In define_para_to_profile:")
-        print("devices:", devices)
-        print("img_points_path:", img_points_path)
-        print("obj_points_path:", obj_points_path)
-        print("device_profile_mapping_file:", device_profile_mapping_file)
-        print("cur_profile_name:", cur_profile_name)
+        logger.debug("In save_device_to_profile")
+        logger.debug("devices: {}", devices)
+        logger.debug("img_points_path: {}", img_points_path)
+        logger.debug("obj_points_path: {}", obj_points_path)
+        logger.debug("device_profile_mapping_file: {}", device_profile_mapping_file)
+        logger.debug("cur_profile_name: {}", cur_profile_name)
 
         if device_profile_mapping_file:
             # 1. Set the open mode
@@ -167,11 +168,11 @@ class Undistortion:
                 for cur_device in devices:
                     line = cur_profile_name + DELIMITER + cur_device + DELIMITER + \
                            img_points_path + DELIMITER + obj_points_path + "\n"
-                    print(line)
+                    logger.debug(line)
                     mapping_file.write(line)
 
         else:
-            print("ERROR: Should define mapping file path variable 'device_profile_mapping_file' in undistortion.py")
+            logger.error("Should define mapping file path variable 'device_profile_mapping_file' in undistortion.py")
 
         pass
 
@@ -179,9 +180,7 @@ class Undistortion:
     def serialize(img_points, obj_points, img_path_no_post_fix, obj_path_no_post_fix):
 
         img_points_np = np.asarray(img_points)
-        # print("img_points_np shape:", img_points_np.shape)
         obj_points_np = np.asarray(obj_points)
-        # print("obj_points_np shape:", obj_points_np.shape)
 
         np.save(img_path_no_post_fix, img_points_np)
         np.save(obj_path_no_post_fix, obj_points_np)
@@ -191,11 +190,11 @@ class Undistortion:
     @staticmethod
     def deserialize(de_img_path, de_obj_path):
         if not de_img_path or not os.path.exists(de_img_path):
-            print("img_path(", de_img_path + "):File not exist")
+            logger.error("img_path({}):File not exist".format(de_img_path))
             return None, None
 
         if not de_obj_path or not os.path.exists(de_obj_path):
-            print("obj_path(", de_obj_path + "):File not exist")
+            logger.error("obj_path({}):File not exist".format(de_obj_path))
             return None, None
 
         img_points = np.load(de_img_path)
@@ -206,20 +205,16 @@ class Undistortion:
     @staticmethod
     def check_np_array_equals(original, deserialized):
         index = 0
-        # result = True
         for deserialized_points in deserialized:
             deserialized_np = np.array(deserialized_points)
             original_point_np = original[index]
             index += 1
             print(np.equal(deserialized_np, original_point_np))
-            # result = result and np.equal(deserialized_np, original_point_np)
-
-        # return result
 
     def calibrate_image(self, image):
         """Input a single frame and return the frame after undistortion"""
         if self.obj_points is None or self.img_points is None:
-            print("not self.obj_points or not self.img_points")
+            self.logger.debug("No self.obj_points or no self.img_points")
 
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -268,6 +263,7 @@ class UndistortionPreProcessor:
         # TODO - can remove this as this could be the output of the function
         self.device_to_profile = dict()  # Profile for selecting profile: <device> -> [list of (img path,obj path)]
         self.cam_device_number = cam_device_number
+        self.logger = logging.getLogger("ATCV")
 
         # DEBUG
         self.find_all_device = True
@@ -286,7 +282,7 @@ class UndistortionPreProcessor:
                 for line in lines:
                     line_array = line.strip('\n').split(DELIMITER)
                     if len(line_array) != 4:
-                        # print("Skip current line due to incorrect format:", line_array)
+                        self.logger.debug("Skip current line due to incorrect format: {}".format(line_array))
                         continue
 
                     cur_profile_name = str(line_array[0])
@@ -303,7 +299,7 @@ class UndistortionPreProcessor:
                     self.device_to_profile[current_device].append(
                         (cur_profile_name, current_img_path, current_obj_path))
 
-            # print("After initialize self.device_to_profile:", self.device_to_profile)
+            self.logger.debug("After initialize self.device_to_profile: {}", self.device_to_profile)
 
         return self.device_to_profile
 
@@ -326,7 +322,7 @@ class UndistortionPreProcessor:
 
         do_undistort = True
 
-        print("Current device:", self.device_name)
+        self.logger.info("Current device:{}".format(self.device_name))
 
         if len(self.device_to_profile.keys()) > 0:
 
@@ -338,7 +334,6 @@ class UndistortionPreProcessor:
             # list_of_devices = ['05a3:9230', '046d:0837']
 
             # 2. Iterate through the list and find if the current device has profile
-            # print(list_of_devices)
             available_profiles_map = dict()
             for current_device in list_of_devices:
                 if current_device in self.device_to_profile:
@@ -356,7 +351,7 @@ class UndistortionPreProcessor:
 
             # 3. If there is no  available profile pairs, pass
             if len(available_profiles_map) == 0:
-                print("Skip select profile: No available device in profile mapping")
+                self.logger.info("Skip select profile: No available device in profile mapping")
                 pass
 
             # 4. If there is only one available profile pair, return it
@@ -365,11 +360,13 @@ class UndistortionPreProcessor:
 
                 for the_only_device, the_tuples in available_profiles_map.items():
                     if len(the_tuples) == 0:
-                        print("Skip select profile: No available profile path found for device", the_only_device)
+                        self.logger.debug("Skip select profile: No available profile path found for device {}",
+                                          the_only_device)
                         no_profile = True
                         break
+
                     elif len(the_tuples) == 1:
-                        print("Single profile pair found!!")
+                        self.logger.debug("Single profile pair found!!")
                         selected_img_path = str(list(the_tuples)[0][1])
                         selected_obj_path = str(list(the_tuples)[0][2])
                         return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix, do_undistort
@@ -382,8 +379,7 @@ class UndistortionPreProcessor:
                     user_selected = input()
                     if user_selected and len(user_selected) > 0 and str(user_selected).isdigit() \
                             and int(user_selected) in id_to_profile:
-                        print("Valid Input:", int(user_selected), id_to_profile[int(user_selected)])
-                        # selected_profile_name = str(id_to_profile[int(user_selected)][0])
+                        self.logger.debug("Valid Input:{} {}".format(user_selected, id_to_profile[int(user_selected)]))
                         selected_img_path = str(id_to_profile[int(user_selected)][1])
                         selected_obj_path = str(id_to_profile[int(user_selected)][2])
                         return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix, do_undistort
@@ -395,11 +391,11 @@ class UndistortionPreProcessor:
                     #  Enable skipping undistortion
                     elif str(user_selected).lower() == none_profile_symbol:
                         do_undistort = False
-                        print("Skipping undistortion!")
+                        self.logger.info("Skipping undistortion!")
                         break
 
                     else:
-                        print("Invalid input:", user_selected)
+                        self.logger.error("Invalid input: {}", user_selected)
 
         if default_img_points_path \
                 and os.path.isfile(default_img_points_path + npy_file_postfix) \
@@ -427,25 +423,25 @@ class UndistortionPreProcessor:
         # 2. Find the vendor id and product id of device
         driver_path = "/sys/class/video4linux/video" + str(cam_device_number) + "/device/input/"
         if not os.path.exists(driver_path):
-            print("Driver folder not exist:", driver_path)
+            logger.debug("Driver folder not exist: {}", driver_path)
             return device_vendor_product
 
         input_folder = ""
         try:
             input_folder = os.listdir(driver_path)[0]
-        except:
-            print("Driver input folder not exist:", driver_path + input_folder)
+        except Exception as e:
+            logger.error("Exception when finding folder({}): {}".format(driver_path + input_folder, e))
             return device_vendor_product
 
         driver_path += (input_folder + "/id")
         if not os.path.exists(driver_path):
-            print("Driver input id folder not exist:", driver_path)
+            logger.error("Driver input id folder not exist: {}", driver_path)
             return device_vendor_product
 
         # Check vendor id
         vendor_path = driver_path + "/vendor"
         if not os.path.exists(vendor_path):
-            print("Vendor file not exist:", vendor_path)
+            logger.error("Vendor file not exist: {}", vendor_path)
             return device_vendor_product
 
         id_vendor = ""
@@ -455,7 +451,7 @@ class UndistortionPreProcessor:
         # Check product id
         product_path = driver_path + "/product"
         if not os.path.exists(product_path):
-            print("Product file not exist:", product_path)
+            logger.error("Product file not exist: {}", product_path)
             return device_vendor_product
 
         id_product = ""
@@ -487,7 +483,6 @@ class UndistortionPreProcessor:
         counter = 0
         padding = "    "
         id_to_profile_pair = dict()
-        # print(name, ":")
         print("Please select a profile by entering the #:\n"
               "(or \"" + default_profile_symbol + "\" for default profile, "
                                                   "\"" + none_profile_symbol + "\" for not to undistort)")
@@ -546,11 +541,21 @@ def parse_args(args):
     # Check chessboard path
     cur_chessboard_path = str(args[2])
     images = glob.glob(cur_chessboard_path)
+
     if len(images) == 0:
-        # TODO[low] - add asterisk manually
-        print("NO pictures under chessboard path:", cur_chessboard_path)
-        print("Chessboard path should be in the format of:<relative path>/*")
-        exit()
+        # Add asterisk manually and retry
+        if "*" not in cur_chessboard_path:
+            if cur_chessboard_path.endswith("/"):
+                cur_chessboard_path += "*"
+            else:
+                cur_chessboard_path += "/*"
+
+            images = glob.glob(cur_chessboard_path)
+
+        if len(images) == 0:
+            logger.error("NO pictures under chessboard path:{}".format(cur_chessboard_path))
+            logger.error("Chessboard path should be in the format of:<relative path>/*")
+            exit()
 
     cur_img_path = str(args[3])
     cur_obj_path = str(args[4])
@@ -584,11 +589,11 @@ def usage():
 if __name__ == "__main__":
     # Main function is for build profile for a list of devices
     profile_name, chessboard_path, img_path, obj_path, device_list = parse_args(sys.argv)
-    print("profile_name", profile_name)
-    print("chessboard_path", chessboard_path)
-    print("img_path", img_path)
-    print("obj_path", obj_path)
-    print("device_list", device_list)
+    logger.debug("profile_name: {}".format(profile_name))
+    logger.debug("chessboard_path: {}".format(chessboard_path))
+    logger.debug("img_path: {}".format(img_path))
+    logger.debug("obj_path: {}".format(obj_path))
+    logger.debug("device_list: {}".format(device_list))
     Undistortion.chessboard_path_to_profile(profile_name, chessboard_path, img_path, obj_path, device_list)
 
     # Example:
