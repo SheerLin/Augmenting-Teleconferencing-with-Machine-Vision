@@ -105,7 +105,21 @@ the `v4l2_priority` line ought to be
 ```
 
 
-# Undistorter Setup
+# Run
+For the autostart watcher:
+```
+python3 event.py -h
+```
+
+or
+
+For the main program:
+```
+python3 main.py -h
+```
+
+
+# Add Distortion Profile
 You may want to undistort the video output if your camera has a wide angle lens.
 
 To calibrate your camera, follow these steps:
@@ -124,20 +138,6 @@ python3 undistortion.py <profile_name> <chessboard_path> <img_point_path> <obj_p
 * e.g.python3 undistortion.py "undistort/data/chessboard/original4/*" "undistort/profiles/img1"
  "undistort/profiles/obj1" 05a3:9230
 
-
-## Run
-For the autostart watcher:
-```
-python3 event.py -h
-```
-
-
-or
-
-For the main program:
-```
-python3 main.py -h
-```
 
 # Benchmark
 We have pre-recorded several videos of whiteboard for benchmarking, located in data/benchmark directory. Each video is manually labeled with the correct locations of the 4 corners of the whiteboard. The benchmark will run the extractor and compare the detected whiteboard location with the labeled location. 
