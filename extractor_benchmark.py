@@ -1,13 +1,15 @@
-import cv2
 import os
 import shutil
-import extractor
-import main
-import math
-from polygon_intersection.polygon_intersection_area import getScore
 import time
 
+import cv2
+from polygon_intersection.polygon_intersection_area import getScore
+
+import extractor
+import main
+
 benchmark_logger = None
+dir = 'data/benchmark'
 
 def log(str):
     print (str)
@@ -15,16 +17,12 @@ def log(str):
 
 if __name__== "__main__":
     start_time = time.time()
-    dir = 'data/benchmark'
-    main.ENABLE_VIRTUAL_CAM = False
-    main.ENABLE_GUI = False
-    main.BENCHMARK = True
-    main.DEBUG = False
     videos = {} # filename without extension-> path to file
     labels = {} # filename without extension -> path to file
     f1_scores = []
     precisions = []
     recalls = []
+    
     for file in os.listdir(dir):
         items = file.split(".")
         filename = items[0]
@@ -36,6 +34,7 @@ if __name__== "__main__":
         else:
             videos[filename] = dir + "/" + file
     benchmark_logger = open(dir + '/benchmark_result.log', "w")
+    
     for filename in videos:
         video_path = videos[filename]
         log('---------------------- ' + video_path + ' ---------------------')
@@ -50,11 +49,12 @@ if __name__== "__main__":
         cam_device = cv2.VideoCapture(video_path)
         width = int(cam_device.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cam_device.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        # main.process_video(cam_device, None, width, height)
+
+        cap_device = None
         img_path = None
         obj_path = None
         main.process_video(
-            cam_device, None,
+            cam_device, cap_device,
             width, height,
             img_path, obj_path, 
             {
@@ -62,7 +62,7 @@ if __name__== "__main__":
                 'undistorter': False,
                 'beautifier': False,
                 'benchmark': True,
-                'debug': True,
+                'debug': False,
             }
         )
         shutil.copyfile('extract_points.log', log_path)
@@ -106,6 +106,7 @@ if __name__== "__main__":
             log('avg recall for this video: ' + str(recall_avg))
             log('avg f1_score for this video: ' + str(f1_score_avg))
             log('---------------------- ' + video_path + ' ---------------------\n\n')
+    
     elapsed_time = time.time() - start_time
     log('\n\n---------------------- benchmark result ---------------------')
     log('processed '+ str(len(videos)) +' videos')
@@ -115,4 +116,3 @@ if __name__== "__main__":
     log('avg f1_score for all videos: ' + str(sum(f1_scores) / float(len(f1_scores))))
     log('benchmark results saved to: ' + dir + '/benchmark_result.log')
     benchmark_logger.close()
-

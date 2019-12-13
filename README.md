@@ -139,8 +139,8 @@ For the main program:
 python3 main.py -h
 ```
 
-# benchmark
-We have pre-recorded several videos of whiteboard for a benchmark, located at data/benchmark. Each video is manually labeled with the correct locations of 4 corners of the whiteboard. The benchmark will run the extractor and compare the detected whiteboard location with the labeled location. 
+# Benchmark
+We have pre-recorded several videos of whiteboard for benchmarking, located in data/benchmark directory. Each video is manually labeled with the correct locations of the 4 corners of the whiteboard. The benchmark will run the extractor and compare the detected whiteboard location with the labeled location. 
 
 To run the benchmark
 ```
