@@ -8,6 +8,7 @@ import shutil
 import sys
 import logging
 import platform
+import main
 
 profiles_folder = "undistort/profiles"
 npy_file_postfix = ".npy"
@@ -30,7 +31,7 @@ logger = logging.getLogger("ATCV")
 
 
 class Undistortion:
-    def __init__(self, img_points_path=None, obj_points_path=None):
+    def __init__(self, img_points_path=None, obj_points_path=None, debug=main.DEBUG):
         self.logger = logging.getLogger("ATCV")
 
         self.img_points_path = img_points_path
@@ -42,7 +43,7 @@ class Undistortion:
         self.img_points = []  # 2d points in image plane.
 
         # debug
-        self.show_image = True
+        self.show_image = debug
         self.both_way = False
         self.crop = True
         self.imshow_size = cv2.WINDOW_NORMAL  # cv2.WINDOW_FULLSCREEN
@@ -534,7 +535,7 @@ def parse_args(args):
 def usage():
     print("Usage: python3 undistortion.py <profile name> <chessboard path> <img point path> "
           "<obj point path> <device1> [<device2> ... <device n>]")
-    test_profile_name = "slight_640_800"
+    test_profile_name = "test1"
     test_img_points_path = "undistort/profiles/img1"
     test_obj_points_path = "undistort/profiles/obj1"
     print("   <profile name>   : The name of the profile, e.g." + test_profile_name)
@@ -556,9 +557,3 @@ if __name__ == "__main__":
     logger.debug("obj_path: {}".format(obj_path))
     logger.debug("device_list: {}".format(device_list))
     Undistortion.chessboard_path_to_profile(profile_name, chessboard_path, img_path, obj_path, device_list)
-
-    # Example:
-    # Undistortion.chessboard_path_to_profile(
-    #     default_chessboard_path2, "undistort/profiles/test_img1",
-    #     "undistort/profiles/test_obj1", ["05a3:9230", "test"]
-    # )

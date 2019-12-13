@@ -42,7 +42,7 @@ class Engine:
 
         if self.enable_undistorter:
             self.undistorter = undistortion.Undistortion(
-                img_points_path=self.img_path, obj_points_path=self.obj_path
+                img_points_path=self.img_path, obj_points_path=self.obj_path, debug=debug
             )
         
         if self.enable_beautifier:
