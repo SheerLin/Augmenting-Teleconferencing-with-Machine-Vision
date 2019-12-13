@@ -55,11 +55,13 @@ class Extractor:
         # TODO check HUE space
         # Filter out other colors
         src = src_clahe
-        delta = 60
-        m = 1.5
-        pixels = src[center_y:center_y+center_box_h, center_x:center_x+center_box_w].copy()
-        pixels = pixels.reshape((pixels.shape[0] * pixels.shape[1], pixels.shape[2]))
-        avg = pixels.mean(axis=0).reshape((3))
+        delta = 30 # 60
+        m = 1 # 1.5
+        
+        avg = self.get_avg_color_center(
+            src, center_x, center_y, center_box_w, center_box_h
+        )
+        
         lower = np.maximum(avg-delta, 0).astype('uint8')
         upper = np.minimum(avg+delta*m, 255).astype('uint8')
         mask = cv2.inRange(src, lower, upper)
@@ -101,8 +103,22 @@ class Extractor:
         src_ex, (x, y, w, h) = self.find_wb_contour(src_ex, contours)
 
         if self.debug:
+            x_l = center_x
+            x_r = center_x+center_box_w
+            y_u = center_y
+            y_d = center_y+center_box_h
+            x_o = 2*center_box_w
+            y_o = 2*center_box_h
             # Draw color filter box
-            cv2.rectangle(src_ex, (center_x,center_y), (center_x+center_box_w,center_y+center_box_h), (0,0,255), 2)
+            cv2.rectangle(src_ex, (x_l,y_u), (x_r,y_d), (0,0,255), 2)
+            cv2.rectangle(src_ex, (x_l-x_o,y_u), (x_r-x_o,y_d), (0,0,255), 2)
+            cv2.rectangle(src_ex, (x_l+x_o,y_u), (x_r+x_o,y_d), (0,0,255), 2)
+            cv2.rectangle(src_ex, (x_l,y_u-y_o), (x_r,y_d-y_o), (0,0,255), 2)
+            cv2.rectangle(src_ex, (x_l,y_u+y_o), (x_r,y_d+y_o), (0,0,255), 2)
+            cv2.rectangle(src_ex, (x_l-x_o,y_u-y_o), (x_r-x_o,y_d-y_o), (0,0,255), 2)
+            cv2.rectangle(src_ex, (x_l+x_o,y_u-y_o), (x_r+x_o,y_d-y_o), (0,0,255), 2)
+            cv2.rectangle(src_ex, (x_l-x_o,y_u+y_o), (x_r-x_o,y_d+y_o), (0,0,255), 2)
+            cv2.rectangle(src_ex, (x_l+x_o,y_u+y_o), (x_r+x_o,y_d+y_o), (0,0,255), 2)
         
         return src_ex, (x,y,w,h)
 
@@ -151,6 +167,74 @@ class Extractor:
         src_ex[y:y+h, x:x+w] = src_hough[:,:]
 
         return src_ex, points
+
+    def get_avg_color_center(self, src, center_x, center_y, center_box_w, center_box_h):
+        x_l = center_x
+        x_r = center_x+center_box_w
+        y_u = center_y
+        y_d = center_y+center_box_h
+        x_o = 2*center_box_w
+        y_o = 2*center_box_h
+        
+        # c
+        pixels = src[y_u:y_d, x_l:x_r].copy()
+        pixels = pixels.reshape((pixels.shape[0] * pixels.shape[1], pixels.shape[2]))
+        avg_c = pixels.mean(axis=0).reshape((3))
+        
+        # l
+        pixels = src[y_u:y_d, x_l-x_o:x_r-x_o].copy()
+        pixels = pixels.reshape((pixels.shape[0] * pixels.shape[1], pixels.shape[2]))
+        avg_l = pixels.mean(axis=0).reshape((3))
+        
+        # r
+        pixels = src[y_u:y_d, x_l+x_o:x_r+x_o].copy()
+        pixels = pixels.reshape((pixels.shape[0] * pixels.shape[1], pixels.shape[2]))
+        avg_r = pixels.mean(axis=0).reshape((3))
+
+        # t
+        pixels = src[y_u-y_o:y_d-y_o, x_l:x_r].copy()
+        pixels = pixels.reshape((pixels.shape[0] * pixels.shape[1], pixels.shape[2]))
+        avg_t = pixels.mean(axis=0).reshape((3))
+
+        # b
+        pixels = src[y_u+y_o:y_d+y_o, x_l:x_r].copy()
+        pixels = pixels.reshape((pixels.shape[0] * pixels.shape[1], pixels.shape[2]))
+        avg_b = pixels.mean(axis=0).reshape((3))
+
+        # tl
+        pixels = src[y_u-y_o:y_d-y_o, x_l-x_o:x_r-x_o].copy()
+        pixels = pixels.reshape((pixels.shape[0] * pixels.shape[1], pixels.shape[2]))
+        avg_tl = pixels.mean(axis=0).reshape((3))
+        
+        # tr
+        pixels = src[y_u-y_o:y_d-y_o, x_l+x_o:x_r+x_o].copy()
+        pixels = pixels.reshape((pixels.shape[0] * pixels.shape[1], pixels.shape[2]))
+        avg_tr = pixels.mean(axis=0).reshape((3))
+        
+        # bl
+        pixels = src[y_u+y_o:y_d+y_o, x_l-x_o:x_r-x_o].copy()
+        pixels = pixels.reshape((pixels.shape[0] * pixels.shape[1], pixels.shape[2]))
+        avg_bl = pixels.mean(axis=0).reshape((3))
+        
+        # br
+        pixels = src[y_u+y_o:y_d+y_o, x_l+x_o:x_r+x_o].copy()
+        pixels = pixels.reshape((pixels.shape[0] * pixels.shape[1], pixels.shape[2]))
+        avg_br = pixels.mean(axis=0).reshape((3))
+        
+        data = np.array([avg_tl, avg_t, avg_tr, avg_l, avg_c, avg_r, avg_bl, avg_b, avg_br])
+        clusters = kmeans(data, k=2, steps=3)
+        c_0 = np.count_nonzero(clusters==0)
+        c_1 = len(data) - c_0
+
+        ele = list(zip(data, clusters))
+        if c_0 > c_1:
+            ele = list(filter(lambda x: x[1] == 0, ele))
+        else:
+            ele = list(filter(lambda x: x[1] == 1, ele))
+        ele = list(map(lambda x: x[0], ele))
+        avg = np.mean(list(ele), axis=0)
+
+        return avg
 
     def find_wb_contour(self, src_ex, contours):
         x,y,w,h = 0, 0, self.width, self.height
@@ -236,7 +320,7 @@ class Extractor:
 
     def extract_whiteboard(self, orig, frame_num):
         src = orig.copy()
-        
+
         # Skip processing if not sampling frame
         if frame_num % self.freq != 0:
             if self.points is not None:

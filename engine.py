@@ -118,5 +118,5 @@ class Engine:
 
         if self.show_image:
             show = np.hstack([orig, src])
-            cv2.imshow('Video', show)
+            # cv2.imshow('Video', show)
         return src
