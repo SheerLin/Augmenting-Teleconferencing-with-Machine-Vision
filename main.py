@@ -215,7 +215,8 @@ def set_up_devices(resolution=RESOLUTION, cam_device_number=CAM_DEVICE_NUMBER, c
 @return Void
 '''
 def process_video(cam_device, cap_device, width, height, img_path, obj_path,
-                  enable_undistorter=ENABLE_UNDISTORTER,enable_virtual_cam=ENABLE_VIRTUAL_CAM):
+                  enable_undistorter=ENABLE_UNDISTORTER,enable_virtual_cam=ENABLE_VIRTUAL_CAM,
+                  debug=DEBUG):
     eng = engine.Engine({
         'width': width, 
         'height': height, 
@@ -223,7 +224,7 @@ def process_video(cam_device, cap_device, width, height, img_path, obj_path,
         'obj_path': obj_path,
         'enable_undistorter': enable_undistorter,
         'enable_beautifier': ENABLE_BEAUTIFIER,
-    }, BENCHMARK, DEBUG)
+    }, BENCHMARK, debug)
 
     while True:
         try:
@@ -262,7 +263,9 @@ if __name__== '__main__':
     if ENABLE_VIRTUAL_CAM:
         logger.info('CAP_DEVICE_NUMBER: {}'.format(CAP_DEVICE_NUMBER))
     logger.info('RESOLUTION: {}'.format(RESOLUTION))
-    
+
+    cam_device = None
+    cap_device = None
     if ENABLE_VIRTUAL_CAM:
         import v4l2
 
@@ -279,7 +282,7 @@ if __name__== '__main__':
 
         # Will run process_video during the lifetime of user interface
         interface.initialize_ui(all_profiles_map=device_to_profile, resolution=RESOLUTION,
-                                enable_virtual_cam=ENABLE_VIRTUAL_CAM)
+                                enable_virtual_cam=ENABLE_VIRTUAL_CAM, debug=DEBUG)
 
     else:
         cam_device, cap_device, width, height = set_up_devices(RESOLUTION, CAM_DEVICE_NUMBER,
@@ -296,6 +299,9 @@ if __name__== '__main__':
         process_video(cam_device, cap_device, width, height, img_path, obj_path)
 
     # Clean up
-    del(cam_device)
+    if cam_device:
+        del cam_device
+
     if ENABLE_VIRTUAL_CAM:
-        cap_device.close()
+        if cap_device:
+            cap_device.close()

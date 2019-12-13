@@ -21,7 +21,7 @@ PROFILES_CUR_CAM_ONLY = "PROFILES_CUR_CAM_ONLY"
 class MainWindow(QWidget):
 
     def __init__(self, profiles_map: dict, resolution: int = main.RESOLUTION,
-                 enable_virtual_cam=False):
+                 enable_virtual_cam=main.ENABLE_VIRTUAL_CAM, debug=main.DEBUG):
         super(MainWindow, self).__init__(flags=Qt.Widget)
         self.left = 10
         self.top = 10
@@ -39,7 +39,10 @@ class MainWindow(QWidget):
         self.input_video = -1
         self.output_video = -1
         self.enable_virtual_cam = enable_virtual_cam
+        self.debug = debug
         self.logger = logging.getLogger("ATCV")
+        self.cam_device = None
+        self.cap_device = None
 
         self.resize(self.width, self.sizeHint().height())
         self.init_interface()
@@ -194,15 +197,15 @@ class MainWindow(QWidget):
 
         self.child_pid = os.fork()
         if self.child_pid == 0:
-            cam_device, cap_device, frame_width, frame_height \
+            self.cam_device, self.cap_device, frame_width, frame_height \
                 = main.set_up_devices(resolution=int(self.resolution), cam_device_number=self.input_video,
                                       cap_device_number=self.output_video, enable_virtual_cam=self.enable_virtual_cam)
 
             try:
-                main.process_video(cam_device=cam_device, cap_device=cap_device,
+                main.process_video(cam_device=self.cam_device, cap_device=self.cap_device,
                                    width=frame_width, height=frame_height, img_path=img_path,
                                    obj_path=obj_path, enable_undistorter=self.enable_undistortion,
-                                   enable_virtual_cam=self.enable_virtual_cam)
+                                   enable_virtual_cam=self.enable_virtual_cam, debug=self.debug)
             except Exception as e:
                 self.kill_main_process_video()
                 self.logger.error("Exception when processing frame:{}".format(e))
@@ -291,6 +294,12 @@ class MainWindow(QWidget):
         if self.child_pid:
             kill_main(self.child_pid)
 
+        if self.cam_device:
+            del self.cam_device
+
+        if self.cap_device:
+            self.cap_device.close()
+
 
 def kill_main(pid):
     if pid:
@@ -298,7 +307,8 @@ def kill_main(pid):
         subprocess.Popen(kill_command)
 
 
-def initialize_ui(all_profiles_map: dict, resolution=main.RESOLUTION, enable_virtual_cam=False):
+def initialize_ui(all_profiles_map: dict, resolution=main.RESOLUTION,
+                  enable_virtual_cam=main.ENABLE_VIRTUAL_CAM, debug=main.DEBUG):
     app = QApplication([])
 
     # Force the style to be the same on all OSs:
@@ -323,7 +333,8 @@ def initialize_ui(all_profiles_map: dict, resolution=main.RESOLUTION, enable_vir
 
     app.setApplicationName("Augmenting Teleconferencing")
 
-    window = MainWindow(profiles_map=all_profiles_map, resolution=resolution, enable_virtual_cam=enable_virtual_cam)
+    window = MainWindow(profiles_map=all_profiles_map, resolution=resolution,
+                        enable_virtual_cam=enable_virtual_cam, debug=debug)
     window.show()
 
     app.exec_()
