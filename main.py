@@ -25,7 +25,6 @@ ENABLE_BEAUTIFIER = True
 
 BENCHMARK = False
 DEBUG = False
-PROFILE = "default"
 FORMAT = '%(asctime)-15s %(name)s (%(levelname)s) > %(message)s'
 logging.basicConfig(format=FORMAT)
 logger = logging.getLogger('ATCV')
@@ -51,7 +50,7 @@ def parse_args():
     parser.add_argument('-eb', '--beautifier', type=str2bool, default=ENABLE_BEAUTIFIER, help='ENABLE_BEAUTIFIER: Enable beautifier component (bool, [true, false])')
     parser.add_argument('-b', '--benchmark', type=str2bool, default=BENCHMARK, help='BENCHAMRK: Enable benchmark mode (bool, [true, false])')
     parser.add_argument('-d', '--debug', type=str2bool, default=DEBUG, help='DEBUG: Enable debugging mode (bool, [true, false])')
-    parser.add_argument('-p', '--profile', type=str, default=PROFILE, help='PROFILE: The profile name of undistorter when enabled (str, eg: "default")')
+    parser.add_argument('-p', '--profile', type=str, default=None, help='PROFILE: The profile name of undistorter when enabled (str, eg: "default")')
 
     args = parser.parse_args()
     return args
