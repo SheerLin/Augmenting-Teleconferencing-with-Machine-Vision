@@ -294,7 +294,6 @@ class UndistortionPreProcessor:
 
         return self.device_to_profile
 
-    # TODO
     def __select_profile(self, profile: str):
         """
         Function:
@@ -313,18 +312,26 @@ class UndistortionPreProcessor:
                 self.device_name = UndistortionPreProcessor.find_device_id_by_cam_device_number(self.cam_device_number)
                 self.logger.info("Current input camera device:{}".format(self.device_name))
 
-            # 1. Iterate through the list and find if the current device has profile
+            # 1. Iterate through the list
             available_profiles_map = dict()
             for current_device in self.device_to_profile.keys():
                 if current_device not in available_profiles_map:
                     available_profiles_map[current_device] = set()
 
                 for profile_tuple in self.device_to_profile[current_device]:
+                    tmp_profile_name = str(profile_tuple[0])
                     tmp_img_path = str(profile_tuple[1])
                     tmp_obj_path = str(profile_tuple[2])
                     if tmp_img_path and os.path.exists(tmp_img_path + npy_file_postfix) \
                             and tmp_obj_path and os.path.exists(tmp_obj_path + npy_file_postfix):
                         available_profiles_map[current_device].add(profile_tuple)
+
+                        # Found the input profile name
+                        if tmp_profile_name == profile:
+                            self.logger.info("Found input profile {}: img path({}), obj path({})"
+                                             .format(tmp_profile_name, tmp_img_path, tmp_obj_path))
+                            return tmp_img_path + npy_file_postfix, tmp_obj_path + npy_file_postfix, \
+                                   enable_undistorter
 
             # 2. If there is no available profile pairs, pass
             if len(available_profiles_map) == 0:

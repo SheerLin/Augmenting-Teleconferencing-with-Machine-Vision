@@ -45,6 +45,7 @@ class MainWindow(QWidget):
         self.enable_undistortion = args.undistorter
         self.enable_beautifier = args.beautifier
         self.debug = args.debug
+        self.profile = args.profile
         self.benchmark = False
 
         self.cam_device = None
@@ -248,6 +249,8 @@ class MainWindow(QWidget):
         if platform.system() == "Darwin":
 
             cmd = "python3 main.py -g f -d " + str(self.debug) + " -v f -r " + str(self.resolution) + " -i 0"
+            if self.profile:
+                cmd += " -p " + self.profile
             p = subprocess.Popen(cmd, shell=True)
             self.child_pid = p.pid
 
