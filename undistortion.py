@@ -7,6 +7,7 @@ import subprocess
 import shutil
 import sys
 import logging
+import platform
 
 profiles_folder = "undistort/profiles"
 npy_file_postfix = ".npy"
@@ -26,11 +27,6 @@ none_profile_symbol = "n"
 logger = logging.getLogger("ATCV")
 
 
-# General steps
-#  1. If has chessboards images folder path, use this path to get point.
-#  2. if has profile path for image points and obj_points, use this profile
-#  3. If no profile path and no has chessboards images folder path, select from the existing profiles
-#  4. Undistort the image
 class Undistortion:
     def __init__(self, img_points_path=None, obj_points_path=None):
         self.logger = logging.getLogger("ATCV")
@@ -61,7 +57,7 @@ class Undistortion:
 
     def initialize(self):
         """Initialize the needed info"""
-        # Init self.obj_points and self. img_points
+        # Init self.obj_points and self.img_points
         if self.img_points_path and os.path.isfile(self.img_points_path) \
                 and self.obj_points_path and os.path.exists(self.obj_points_path):
             pass
@@ -312,13 +308,9 @@ class UndistortionPreProcessor:
             Path to img points npy file (with post fix)
             Path to obj points npy file (with post fix)
         """
-        # TODO[fusion]  - uncomment this
         self.device_name = UndistortionPreProcessor.find_device_id_by_cam_device_number(self.cam_device_number)
 
-        # TODO[fusion]  - remove this
-        # self.device_name = '05a3:9230'
-
-        do_undistort = True
+        enable_undistorter = True
 
         self.logger.info("Current device:{}".format(self.device_name))
 
@@ -367,7 +359,7 @@ class UndistortionPreProcessor:
                         self.logger.debug("Single profile pair found!!")
                         selected_img_path = str(list(the_tuples)[0][1])
                         selected_obj_path = str(list(the_tuples)[0][2])
-                        return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix, do_undistort
+                        return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix, enable_undistorter
 
             # 5. If there are multiple available profile pairs, let user select
             if not no_profile:
@@ -380,7 +372,7 @@ class UndistortionPreProcessor:
                         self.logger.debug("Valid Input:{} {}".format(user_selected, id_to_profile[int(user_selected)]))
                         selected_img_path = str(id_to_profile[int(user_selected)][1])
                         selected_obj_path = str(id_to_profile[int(user_selected)][2])
-                        return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix, do_undistort
+                        return selected_img_path + npy_file_postfix, selected_obj_path + npy_file_postfix, enable_undistorter
 
                     # Enable default profiling
                     if str(user_selected).lower() == default_profile_symbol:
@@ -388,7 +380,7 @@ class UndistortionPreProcessor:
 
                     #  Enable skipping undistortion
                     elif str(user_selected).lower() == none_profile_symbol:
-                        do_undistort = False
+                        enable_undistorter = False
                         self.logger.info("Skipping undistortion!")
                         break
 
@@ -399,26 +391,16 @@ class UndistortionPreProcessor:
                 and os.path.isfile(default_img_points_path + npy_file_postfix) \
                 and default_obj_points_path \
                 and os.path.exists(default_obj_points_path + npy_file_postfix):
-            return default_img_points_path + npy_file_postfix, default_obj_points_path + npy_file_postfix, do_undistort
+            return default_img_points_path + npy_file_postfix, default_obj_points_path + npy_file_postfix, enable_undistorter
 
         else:
-            return False, False, do_undistort
+            return False, False, enable_undistorter
 
     @staticmethod
     def find_device_id_by_cam_device_number(cam_device_number):
         device_vendor_product = None
 
-        # 1. Find the name of device: optional
-        # name_path = "/sys/class/video4linux/video" + str(cam_device_number) + "/name"
-        # if not os.path.exists(name_path):
-        #     print("Name file not exist:", name_path)
-        #     return device_vendor_product
-        #
-        # with open(name_path, 'r') as f:
-        #     name = f.readline()
-        #     print("Name:", name)
-
-        # 2. Find the vendor id and product id of device
+        # Find the vendor id and product id of device
         driver_path = "/sys/class/video4linux/video" + str(cam_device_number) + "/device/input/"
         if not os.path.exists(driver_path):
             logger.debug("Driver folder not exist: {}", driver_path)
@@ -463,6 +445,7 @@ class UndistortionPreProcessor:
     @staticmethod
     def get_usb_devices():
         """Get the list of <idVendor>:<idProduct> from cmd lsusb"""
+        # TODO - MAC compatibility
         cmd = "lsusb | awk '{print $6 }'"
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         output = p.communicate()[0].decode("utf-8")
@@ -470,7 +453,7 @@ class UndistortionPreProcessor:
         return usb_devices
 
     @staticmethod
-    def profile_map_formatter(profile_map: dict, name: str):
+    def profile_map_formatter(profile_map: dict):
         """
         Function:
             Give each profile pair a unique id and print them in user readable format
@@ -486,11 +469,7 @@ class UndistortionPreProcessor:
                                                   "\"" + none_profile_symbol + "\" for not to undistort)")
         for cur_device, cur_tuple_list_or_set in profile_map.items():
             cur_tuple_list = list(cur_tuple_list_or_set)
-            # TODO[fusion] - uncomment this
             print(padding + UndistortionPreProcessor.get_usb_device(device_id=cur_device))
-
-            # TODO[fusion]  - remove this
-            # print(padding + cur_device)
 
             for cur_tuple in cur_tuple_list:
                 print(padding + padding, counter, "=", cur_tuple[0])
@@ -501,26 +480,33 @@ class UndistortionPreProcessor:
 
     @staticmethod
     def get_usb_device(device_id):
-        """Get the (first) line in lsusb for device with device_id"""
-        cmd = "lsusb | grep " + str(device_id)
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        output = p.communicate()[0].decode("utf-8")
-        usb_devices = str(output).splitlines()
-        if not usb_devices or len(usb_devices) == 0:
-            return []
+        """For Linux, get the (first) line in lsusb for device with device_id. Otherwise just return device_id"""
+        if platform.system() == "Linux":
+            cmd = "lsusb | grep " + str(device_id)
+            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            output = p.communicate()[0].decode("utf-8")
+            usb_devices = str(output).splitlines()
+            if not usb_devices or len(usb_devices) == 0:
+                return []
+            else:
+                return usb_devices[0]
         else:
-            return usb_devices[0]
+            return device_id
 
     @staticmethod
     def get_videos_list():
-        cmd = "ls /dev/video*"
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        output = p.communicate()[0].decode("utf-8")
-        raw_list = str(output).splitlines()
         result = list()
-        for cur_video in raw_list:
-            cur_video = cur_video.strip().split("/")[2]
-            result.append(cur_video)
+
+        if platform.system() == "Linux":
+            cmd = "ls /dev/video*"
+            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            output = p.communicate()[0].decode("utf-8")
+            raw_list = str(output).splitlines()
+            for cur_video in raw_list:
+                cur_video = cur_video.strip().split("/")[2]
+                result.append(cur_video)
+        else:
+            result.append("video0")
 
         return result
 

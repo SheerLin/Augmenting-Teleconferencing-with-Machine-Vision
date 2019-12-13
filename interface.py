@@ -1,6 +1,8 @@
 import logging
 import os
 import signal
+import platform
+import subprocess
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QPalette, QColor, QCursor
@@ -21,6 +23,7 @@ PROFILES_CUR_CAM_ONLY = "PROFILES_CUR_CAM_ONLY"
 
 RESOLUTIONS = ['1080p', '720p', '480p', '768p', '600p']
 
+
 class MainWindow(QWidget):
 
     def __init__(self, profiles_map, args):
@@ -28,12 +31,12 @@ class MainWindow(QWidget):
         self.left = 10
         self.top = 10
         self.width = 639
-        
+
         self.layout = None
         self.list_widget = None
         self.profile_list_widget = list()
         self.video_list = list()
-        
+
         self.all_profiles_map = profiles_map  # Dictionary:<device> => set( (pair of img_path, obj_path) )
         self.input_video = args.inp
         self.output_video = args.out
@@ -43,14 +46,14 @@ class MainWindow(QWidget):
         self.enable_beautifier = args.beautifier
         self.debug = args.debug
         self.benchmark = False
-        
+
         self.cam_device = None
         self.cap_device = None
         self.child_pid = -1
         self.selected_profile_pair = None  # The option for selecting one from all profiles
         self.final_profile_pair = None  # The final decision of selected profile
         self.logger = logging.getLogger("ATCV")
-        
+
         self.resize(self.width, self.sizeHint().height())
         self.init_interface()
 
@@ -69,7 +72,7 @@ class MainWindow(QWidget):
 
         # Add input and output source
         self.add_input_output_source()
-        
+
         # Add resolution selection
         self.add_resolution()
 
@@ -97,20 +100,25 @@ class MainWindow(QWidget):
         input_label.setBuddy(input_combo_box)
         self.list_widget.append(input_combo_box)
 
-        output_label = self.add_title_label("Output Device (virtual camera)")
-        output_combo_box = QComboBox()
-        output_combo_box.addItems(self.video_list)
-        output_combo_box.currentTextChanged.connect(self.change_output_source)
+        if platform.system() == "Linux":
 
-        output_index = output_combo_box.findText('video' + str(self.output_video), Qt.MatchFixedString)
-        if output_index >= 0:
-            output_combo_box.setCurrentIndex(output_index)
+            output_label = self.add_title_label("Output Device (virtual camera)")
+            output_combo_box = QComboBox()
+            output_combo_box.addItems(self.video_list)
+            output_combo_box.currentTextChanged.connect(self.change_output_source)
+
+            output_index = output_combo_box.findText('video' + str(self.output_video), Qt.MatchFixedString)
+            if output_index >= 0:
+                output_combo_box.setCurrentIndex(output_index)
+            else:
+                self.change_output_source(output_combo_box.currentText())
+            self.logger.debug('Initialized output source: video{}'.format(self.output_video))
+
+            output_label.setBuddy(output_combo_box)
+            self.list_widget.append(output_combo_box)
+
         else:
-            self.change_output_source(output_combo_box.currentText())
-        self.logger.debug('Initialized output source: video{}'.format(self.output_video))
-
-        output_label.setBuddy(output_combo_box)
-        self.list_widget.append(output_combo_box)
+            self.enable_virtual_cam = False
 
     def add_resolution(self):
         label = self.add_title_label("Resolution of Output Video")
@@ -149,14 +157,22 @@ class MainWindow(QWidget):
         self.list_widget.append(button)
 
     def change_input_source(self, text: str):
-        if text and "video" in text:
-            self.input_video = int(text.strip("video"))
-            self.logger.debug("Update input source: video{}".format(self.input_video))
+        if text:
+            try:
+                self.input_video = int(text.strip("video"))
+                self.logger.debug("Update input source: video{}".format(self.input_video))
+
+            except:
+                self.input_video = 0
 
     def change_output_source(self, text: str):
-        if text and "video" in text:
-            self.output_video = int(text.strip("video"))
-            self.logger.debug("Update output source: video{}".format(self.output_video))
+        if text:
+            try:
+                self.output_video = int(text.strip("video"))
+                self.logger.debug("Update output source: video{}".format(self.output_video))
+
+            except:
+                self.output_video = 0
 
     def change_resolution(self, text: str):
         if text and 'p' in text:
@@ -184,7 +200,7 @@ class MainWindow(QWidget):
                 self.enable_undistortion = True
 
         self.auto_resize()
-        
+
     def add_title_label(self, text: str):
         label = QLabel(text)
         self.list_widget.append(label)
@@ -229,39 +245,53 @@ class MainWindow(QWidget):
             img_path += undistortion.npy_file_postfix
             obj_path += undistortion.npy_file_postfix
 
-        self.child_pid = os.fork()
-        if self.child_pid == 0:
-            self.cam_device, self.cap_device, frame_width, frame_height \
-                = main.configure_devices({
+        if platform.system() == "Darwin":
+
+            cmd = "python3 main.py -g f -d " + str(self.debug) + " -v f -r " + str(self.resolution) + " -i 0"
+            p = subprocess.Popen(cmd, shell=True)
+            self.child_pid = p.pid
+
+            MainWindow.delete_list_widget(self.list_widget)
+            MainWindow.delete_list_widget(self.profile_list_widget)
+            self.add_rerun_button()
+            self.auto_resize()
+
+        else:
+            self.child_pid = os.fork()
+
+            if self.child_pid == 0:
+                self.cam_device, self.cap_device, frame_width, frame_height \
+                    = main.configure_devices({
                     'inp': self.input_video,
                     'out': self.output_video,
                     'res': self.resolution,
                     'vcam': self.enable_virtual_cam,
                 })
 
-            try:
-                main.process_video(
-                    self.cam_device, self.cap_device,
-                    frame_width, frame_height, 
-                    img_path, obj_path, 
-                    {
-                        'vcam': self.enable_virtual_cam,
-                        'undistorter': self.enable_undistortion,
-                        'beautifier': True,
-                        'benchmark': False,
-                        'debug': self.debug,
-                    }
-                )
-            except Exception as e:
-                self.kill_main_process_video()
-                self.logger.error("Exception when processing frame: {}".format(e))
-        elif self.child_pid < 0:
-            self.logger.error("Error in forking a new process")
-        else:
-            MainWindow.delete_list_widget(self.list_widget)
-            MainWindow.delete_list_widget(self.profile_list_widget)
-            self.add_rerun_button()
-            self.auto_resize()
+                try:
+                    main.process_video(
+                        self.cam_device, self.cap_device,
+                        frame_width, frame_height,
+                        img_path, obj_path,
+                        {
+                            'vcam': self.enable_virtual_cam,
+                            'undistorter': self.enable_undistortion,
+                            'beautifier': True,
+                            'benchmark': False,
+                            'debug': self.debug,
+                        }
+                    )
+                except Exception as e:
+                    self.kill_main_process_video()
+                    self.logger.error("Exception when processing frame: {}".format(e))
+
+            elif self.child_pid < 0:
+                self.logger.error("Error in forking a new process")
+            else:
+                MainWindow.delete_list_widget(self.list_widget)
+                MainWindow.delete_list_widget(self.profile_list_widget)
+                self.add_rerun_button()
+                self.auto_resize()
 
     def construct_profile_layout(self):
         if not self.profile_list_widget:
