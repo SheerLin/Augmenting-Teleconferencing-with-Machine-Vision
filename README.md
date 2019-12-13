@@ -87,6 +87,7 @@ sudo pip install inotify
 ```
 
 v4l2: Support for virtual cam on Linux
+
 inotify: Support for file access event hook for autostart
 
 Patch v4l2 for Python 3:
