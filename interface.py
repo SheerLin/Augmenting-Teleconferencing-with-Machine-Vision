@@ -90,6 +90,8 @@ class MainWindow(QWidget):
         input_index = input_combo_box.findText('video' + str(self.input_video), Qt.MatchFixedString)
         if input_index >= 0:
             input_combo_box.setCurrentIndex(input_index)
+        else:
+            self.change_input_source(input_combo_box.currentText())
         self.logger.debug('Initialized input source: video{}'.format(self.input_video))
 
         input_label.setBuddy(input_combo_box)
@@ -103,6 +105,8 @@ class MainWindow(QWidget):
         output_index = output_combo_box.findText('video' + str(self.output_video), Qt.MatchFixedString)
         if output_index >= 0:
             output_combo_box.setCurrentIndex(output_index)
+        else:
+            self.change_output_source(output_combo_box.currentText())
         self.logger.debug('Initialized output source: video{}'.format(self.output_video))
 
         output_label.setBuddy(output_combo_box)
@@ -117,6 +121,8 @@ class MainWindow(QWidget):
         index = combo_box.findText(str(self.resolution) + 'p', Qt.MatchFixedString)
         if index >= 0:
             combo_box.setCurrentIndex(index)
+        else:
+            self.change_resolution(combo_box.currentText())
         self.logger.debug('Initialized resolution: {}p'.format(self.resolution))
 
         label.setBuddy(combo_box)
@@ -192,7 +198,7 @@ class MainWindow(QWidget):
 
     def add_rerun_button(self):
         self.list_widget = list()
-        rerun_button = QPushButton("Rerun")
+        rerun_button = QPushButton("Stop")
         rerun_button.clicked.connect(self.kill_main_process_video)
         rerun_button.clicked.connect(self.init_interface)
         rerun_button.setCursor(QCursor(Qt.PointingHandCursor))
@@ -344,7 +350,7 @@ class MainWindow(QWidget):
 
 
 def initialize_ui(profiles_map, args):
-    app = QApplication([])
+    app = QApplication(['Augmenting Teleconferencing'])
 
     # Force the style to be the same on all OSs:
     app.setStyle("Fusion")
@@ -365,8 +371,6 @@ def initialize_ui(profiles_map, args):
     palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
     palette.setColor(QPalette.HighlightedText, Qt.black)
     app.setPalette(palette)
-
-    app.setApplicationName("Augmenting Teleconferencing")
 
     window = MainWindow(profiles_map, args)
     window.show()

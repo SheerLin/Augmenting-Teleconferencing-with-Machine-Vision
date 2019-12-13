@@ -193,7 +193,7 @@ def configure_devices(args):
     cap_device_number = args['out']
     resolution = args['res']
     enable_virtual_cam = args['vcam']
-    
+
     cur_width, cur_height = get_resolution(resolution)
     logger.debug('Width: {}, Height: {}'.format(cur_width, cur_height))
     cur_cam_device, cur_width, cur_height = get_cam_device(cam_device_number, cur_width, cur_height)
