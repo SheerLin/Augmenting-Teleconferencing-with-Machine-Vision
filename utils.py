@@ -2,6 +2,7 @@ import math
 
 import cv2
 import numpy as np
+import scipy.spatial
 
 def draw_line(src, line, color):
     for col1, row1, col2, row2 in line:
@@ -241,8 +242,6 @@ def cluster_centroids(data, clusters, k=None):
     for i in range(k):
         np.mean(data[clusters == i], axis=0, out=result[i])
     return result
-
-import scipy.spatial
 
 def kmeans(data, k=None, centroids=None, steps=20):
     """Divide the observations in data into clusters using the k-means

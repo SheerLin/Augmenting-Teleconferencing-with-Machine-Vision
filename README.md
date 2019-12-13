@@ -79,6 +79,7 @@ sudo rmmod akvcam.ko
 ## Python Lib
 ```
 sudo pip install numpy
+sudo pip install scipy
 sudo pip install python-opencv
 sudo pip install pyqt5
 sudo pip install v4l2
