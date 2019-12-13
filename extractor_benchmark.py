@@ -18,6 +18,8 @@ if __name__== "__main__":
     dir = 'data/benchmark'
     main.ENABLE_VIRTUAL_CAM = False
     main.ENABLE_GUI = False
+    main.BENCHMARK = True
+    main.DEBUG = False
     videos = {} # filename without extension-> path to file
     labels = {} # filename without extension -> path to file
     f1_scores = []
@@ -48,7 +50,21 @@ if __name__== "__main__":
         cam_device = cv2.VideoCapture(video_path)
         width = int(cam_device.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cam_device.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        main.process_video(cam_device, None, width, height)
+        # main.process_video(cam_device, None, width, height)
+        img_path = None
+        obj_path = None
+        main.process_video(
+            cam_device, None,
+            width, height,
+            img_path, obj_path, 
+            {
+                'vcam': False,
+                'undistorter': False,
+                'beautifier': False,
+                'benchmark': True,
+                'debug': True,
+            }
+        )
         shutil.copyfile('extract_points.log', log_path)
         
         del (cam_device)

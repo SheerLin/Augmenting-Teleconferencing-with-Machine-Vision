@@ -9,6 +9,15 @@ import platform
 
 import cv2
 
+ENABLE_VIRTUAL_CAM = False
+ENABLE_GUI = False
+
+ENABLE_UNDISTORTER = False
+ENABLE_BEAUTIFIER = True
+
+BENCHMARK = False
+DEBUG = False
+
 import engine
 import undistortion
 import interface
@@ -17,14 +26,7 @@ CAM_DEVICE_NUMBER = 0 # input device
 CAP_DEVICE_NUMBER = 0 # output device
 RESOLUTION = 1080
 
-ENABLE_VIRTUAL_CAM = True
-ENABLE_GUI = False
 
-ENABLE_UNDISTORTER = False
-ENABLE_BEAUTIFIER = True
-
-BENCHMARK = False
-DEBUG = False
 FORMAT = '%(asctime)-15s %(name)s (%(levelname)s) > %(message)s'
 logging.basicConfig(format=FORMAT)
 logger = logging.getLogger('ATCV')

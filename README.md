@@ -138,3 +138,22 @@ For the main program:
 ```
 python3 main.py -h
 ```
+
+# benchmark
+We have pre-recorded several videos of whiteboard for a benchmark, located at data/benchmark. Each video is manually labeled with the correct locations of 4 corners of the whiteboard. The benchmark will run the extractor and compare the detected whiteboard location with the labeled location. 
+
+To run the benchmark
+```
+python3 extractor_benchmark.py
+```
+
+The output should be in this format:
+```
+---------------------- benchmark result ---------------------
+processed 12 videos
+elapsed time: 152 seconds
+avg precisionfor all videos: 0.7899752023053032
+avg recall for all videos: 0.8853245197144152
+avg f1_score for all videos: 0.8203027128774858
+benchmark results saved to: data/benchmark/benchmark_result.log
+```
