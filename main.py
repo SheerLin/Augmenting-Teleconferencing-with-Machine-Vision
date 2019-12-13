@@ -254,6 +254,7 @@ if __name__== '__main__':
     ENABLE_VIRTUAL_CAM = args.vcam
     ENABLE_GUI = args.gui
     ENABLE_BEAUTIFIER = args.beautifier
+    ENABLE_UNDISTORTER = args.undistorter
     BENCHMARK = args.benchamark
     DEBUG = args.debug
     
@@ -272,9 +273,10 @@ if __name__== '__main__':
     if ENABLE_GUI:
         # TODO
         # Start GUI for these arguments
-        # camera device, capture device,
+        # camera device, capture device, distortion profile,
+        # resolution
         # MAC: disable vcam
-        # distortion profile, video path
+        # video path
         logger.info('Using GUI')
 
         undistortion_preprocessor = undistortion.UndistortionPreProcessor(CAM_DEVICE_NUMBER)
@@ -285,8 +287,10 @@ if __name__== '__main__':
                                 enable_virtual_cam=ENABLE_VIRTUAL_CAM, debug=DEBUG)
 
     else:
-        cam_device, cap_device, width, height = set_up_devices(RESOLUTION, CAM_DEVICE_NUMBER,
-                                                               CAP_DEVICE_NUMBER, ENABLE_VIRTUAL_CAM)
+        cam_device, cap_device, width, height = set_up_devices(resolution=RESOLUTION,
+                                                               cam_device_number=CAM_DEVICE_NUMBER,
+                                                               cap_device_number=CAP_DEVICE_NUMBER,
+                                                               enable_virtual_cam=ENABLE_VIRTUAL_CAM)
 
         img_path = None
         obj_path = None
@@ -295,7 +299,7 @@ if __name__== '__main__':
             undistortion_preprocessor = undistortion.UndistortionPreProcessor(CAM_DEVICE_NUMBER)
             undistortion_preprocessor.init_profile_mapping()
             img_path, obj_path, ENABLE_UNDISTORTER = undistortion_preprocessor()
-        
+
         process_video(cam_device, cap_device, width, height, img_path, obj_path)
 
     # Clean up
