@@ -35,13 +35,13 @@ class MainWindow(QWidget):
         self.video_list = list()
         
         self.all_profiles_map = profiles_map  # Dictionary:<device> => set( (pair of img_path, obj_path) )
-        self.input_video = main.CAM_DEVICE_NUMBER
-        self.output_video = main.CAP_DEVICE_NUMBER
-        self.resolution = main.RESOLUTION
-        self.enable_virtual_cam = main.ENABLE_VIRTUAL_CAM
-        self.enable_undistortion = main.ENABLE_UNDISTORTER
-        self.enable_beautifier = main.ENABLE_BEAUTIFIER
-        self.debug = True
+        self.input_video = args.inp
+        self.output_video = args.out
+        self.resolution = args.res
+        self.enable_virtual_cam = args.vcam
+        self.enable_undistortion = args.undistorter
+        self.enable_beautifier = args.beautifier
+        self.debug = args.debug
         self.benchmark = False
         
         self.cam_device = None
