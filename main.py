@@ -215,7 +215,7 @@ def set_up_devices(resolution=RESOLUTION, cam_device_number=CAM_DEVICE_NUMBER, c
 @return Void
 '''
 def process_video(cam_device, cap_device, width, height, img_path, obj_path,
-                  enable_undistorter=ENABLE_UNDISTORTER,enable_virtual_cam=ENABLE_VIRTUAL_CAM,
+                  enable_undistorter=ENABLE_UNDISTORTER, enable_virtual_cam=ENABLE_VIRTUAL_CAM,
                   debug=DEBUG):
     eng = engine.Engine({
         'width': width, 
@@ -300,7 +300,9 @@ if __name__== '__main__':
             undistortion_preprocessor.init_profile_mapping()
             img_path, obj_path, ENABLE_UNDISTORTER = undistortion_preprocessor()
 
-        process_video(cam_device, cap_device, width, height, img_path, obj_path)
+        process_video(cam_device=cam_device, cap_device=cap_device, width=width, height=height,
+                      img_path=img_path, obj_path=obj_path, enable_undistorter=ENABLE_UNDISTORTER,
+                      enable_virtual_cam=ENABLE_VIRTUAL_CAM, debug=DEBUG)
 
     # Clean up
     if cam_device:
