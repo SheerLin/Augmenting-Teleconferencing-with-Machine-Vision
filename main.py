@@ -184,6 +184,28 @@ def configure_cap_device(device, width, height):
     fcntl.ioctl(device, v4l2.VIDIOC_S_FMT, format)
 
 '''
+@brief Get width-height based on resolution. Configures cam and cap device for the given width-height.
+@param resolution Resolution
+@param cam_device_number Camera device number
+@param cap_device_number Cap device number
+@param enable_virtual_cam The flag indicating whether to enable virtual camera
+@return cur_cam_device, cur_cap_device, cur_width, cur_height
+'''
+def set_up_devices(resolution=RESOLUTION, cam_device_number=CAM_DEVICE_NUMBER, cap_device_number=CAP_DEVICE_NUMBER,
+                   enable_virtual_cam=ENABLE_VIRTUAL_CAM):
+    cur_width, cur_height = get_resolution(resolution)
+    logger.debug('Width: {}, Height: {}'.format(cur_width, cur_height))
+    cur_cam_device, cur_width, cur_height = get_cam_device(cam_device_number, cur_width, cur_height)
+    logger.info('CAM_RESOLUTION: {}, {}'.format(cur_width, cur_height))
+    if enable_virtual_cam:
+        import v4l2
+        cur_cap_device = get_cap_device(cap_device_number, cur_width, cur_height)
+    else:
+        cur_cap_device = None
+
+    return cur_cam_device, cur_cap_device, cur_width, cur_height
+
+'''
 @brief Main loop for reading the video stream from cam_device,
        processing, and writing the video stream to cap_device.
 @param cam_device Cam device (input)
@@ -241,32 +263,28 @@ if __name__== '__main__':
         logger.info('CAP_DEVICE_NUMBER: {}'.format(CAP_DEVICE_NUMBER))
     logger.info('RESOLUTION: {}'.format(RESOLUTION))
     
-    # Set up devices
-    width, height = get_resolution(RESOLUTION)
-    logger.debug('Width: {}, Height: {}'.format(width, height))
-    cam_device, width, height = get_cam_device(CAM_DEVICE_NUMBER, width, height)
-    logger.info('CAM_RESOLUTION: {}, {}'.format(width, height))
     if ENABLE_VIRTUAL_CAM:
         import v4l2
-        cap_device = get_cap_device(CAP_DEVICE_NUMBER, width, height)
-    else:
-        cap_device = None
 
     if ENABLE_GUI:
         # TODO
         # Start GUI for these arguments
-        # camera device, capture device, resolution,
-        # enable vcam, distortion profile, video path
+        # camera device, capture device,
+        # MAC: disable vcam
+        # distortion profile, video path
         logger.info('Using GUI')
 
         undistortion_preprocessor = undistortion.UndistortionPreProcessor(CAM_DEVICE_NUMBER)
         device_to_profile = undistortion_preprocessor.init_profile_mapping()
 
         # Will run process_video during the lifetime of user interface
-        interface.initialize_ui(device_to_profile, cam_device, cap_device, width, height,
+        interface.initialize_ui(all_profiles_map=device_to_profile, resolution=RESOLUTION,
                                 enable_virtual_cam=ENABLE_VIRTUAL_CAM)
 
     else:
+        cam_device, cap_device, width, height = set_up_devices(RESOLUTION, CAM_DEVICE_NUMBER,
+                                                               CAP_DEVICE_NUMBER, ENABLE_VIRTUAL_CAM)
+
         img_path = None
         obj_path = None
         if ENABLE_UNDISTORTER:

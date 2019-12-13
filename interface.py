@@ -20,7 +20,7 @@ PROFILES_CUR_CAM_ONLY = "PROFILES_CUR_CAM_ONLY"
 
 class MainWindow(QWidget):
 
-    def __init__(self, profiles_map: dict, cam_device, cap_device=None, frame_width=1920, frame_height=1080,
+    def __init__(self, profiles_map: dict, resolution: int = main.RESOLUTION,
                  enable_virtual_cam=False):
         super(MainWindow, self).__init__(flags=Qt.Widget)
         self.left = 10
@@ -28,14 +28,12 @@ class MainWindow(QWidget):
         self.width = 639
         self.list_widget = None
         self.profile_list_widget = list()
+        # TODO - rerun need to reset this
         self.selected_profile_pair = None
         self.layout = None
         self.all_profiles_map = profiles_map  # Dictionary:<device> => set( (pair of img_path, obj_path) )
-        self.cam_device = cam_device
-        self.cap_device = cap_device
-        self.frame_width = frame_width
-        self.frame_height = frame_height
-        self.do_undistortion = False
+        self.resolution = resolution
+        self.enable_undistortion = False
         self.child_pid = -1
         self.video_list = list()
         self.input_video = -1
@@ -53,6 +51,7 @@ class MainWindow(QWidget):
 
         MainWindow.delete_list_widget(self.list_widget)
         self.list_widget = list()
+        self.enable_undistortion = False
         self.video_list = undistortion.UndistortionPreProcessor.get_videos_list()
 
         # 1. Add Run button
@@ -174,9 +173,9 @@ class MainWindow(QWidget):
                     self.logger.debug("Select default profile:{}".format(self.selected_profile_pair))
 
             if radio_button.status == NO_UNDISTORTION:
-                self.do_undistortion = False
+                self.enable_undistortion = False
             else:
-                self.do_undistortion = True
+                self.enable_undistortion = True
 
         self.auto_resize()
 
@@ -194,10 +193,14 @@ class MainWindow(QWidget):
 
         self.child_pid = os.fork()
         if self.child_pid == 0:
+            cam_device, cap_device, frame_width, frame_height \
+                = main.set_up_devices(resolution=int(self.resolution), cam_device_number=self.input_video,
+                                      cap_device_number=self.output_video, enable_virtual_cam=self.enable_virtual_cam)
+
             try:
-                main.process_video(cam_device=self.cam_device, cap_device=self.cap_device,
-                                   width=self.frame_width, height=self.frame_height, img_path=img_path,
-                                   obj_path=obj_path, enable_undistorter=self.do_undistortion,
+                main.process_video(cam_device=cam_device, cap_device=cap_device,
+                                   width=frame_width, height=frame_height, img_path=img_path,
+                                   obj_path=obj_path, enable_undistorter=self.enable_undistortion,
                                    enable_virtual_cam=self.enable_virtual_cam)
             except Exception as e:
                 self.kill_main_process_video()
@@ -281,8 +284,7 @@ def kill_main(pid):
         subprocess.Popen(kill_command)
 
 
-def initialize_ui(all_profiles_map: dict, cam_device=None, cap_device=None, width=None, height=None,
-                  enable_virtual_cam=False):
+def initialize_ui(all_profiles_map: dict, resolution=main.RESOLUTION, enable_virtual_cam=False):
     app = QApplication([])
 
     # Force the style to be the same on all OSs:
@@ -307,7 +309,7 @@ def initialize_ui(all_profiles_map: dict, cam_device=None, cap_device=None, widt
 
     app.setApplicationName("Augmenting Teleconferencing")
 
-    window = MainWindow(all_profiles_map, cam_device, cap_device, width, height)
+    window = MainWindow(profiles_map=all_profiles_map, resolution=resolution, enable_virtual_cam=enable_virtual_cam)
     window.show()
 
     app.exec_()
