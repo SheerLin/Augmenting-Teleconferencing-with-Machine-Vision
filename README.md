@@ -5,7 +5,7 @@ CMU INI Practicum
 Piotr Mardziel, Carlee Joe-Wong
 
 # Team members
-Arpit Gupta, MengMeng Zhang, Nan Lin
+Arpit Gupta, Mengmeng Zhang, Nan Lin
 
 
 # Build
