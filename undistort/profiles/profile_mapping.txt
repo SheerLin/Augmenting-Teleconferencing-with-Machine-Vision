@@ -1,0 +1,7 @@
+default,05a3:9422,undistort/profiles/default_img,undistort/profiles/default_obj
+extreme distort(480 only),05a3:9422,undistort/profiles/extreme_distort_img,undistort/profiles/extreme_distort_obj
+slight distortion,05a3:9230,undistort/profiles/original2_img,undistort/profiles/original2_obj
+profile3,05a3:9230,undistort/profiles/original3_img,undistort/profiles/original3_obj
+profile4,05a3:9230,undistort/profiles/original4_img,undistort/profiles/original4_obj
+default,05a3:9230,undistort/profiles/default_img,undistort/profiles/default_obj
+extreme distort(480 only),05a3:9230,undistort/profiles/extreme_distort_img,undistort/profiles/extreme_distort_obj

@@ -26,11 +26,14 @@ int main(int argc, char** argv)
 
     Ptr<cv::superres::FrameSource> f;
     f = cv::superres::createFrameSource_Video(inputVideoName);
+    // f = cv::superres::createFrameSource_Video_CUDA(inputVideoName);
     Ptr<cv::superres::SuperResolution >sr;
     VideoWriter writer;
 
     sr = cv::superres::createSuperResolution_BTVL1();
+    // sr = cv::superres::createSuperResolution_BTVL1_CUDA();
     Ptr<DenseOpticalFlowExt> of = cv::superres::createOptFlow_Farneback();
+    // Ptr<DenseOpticalFlowExt> of = cv::superres::createOptFlow_Farneback_CUDA();
 
     int scale = 2;
     sr->setOpticalFlow(of);
@@ -50,13 +53,13 @@ int main(int argc, char** argv)
             break;
         if (!outputVideoName.empty())
         {
-            std::cout<<"1";
+            // std::cout<<"1";
             if (!writer.isOpened()) {
-                std::cout<<"2";
+                // std::cout<<"2";
 
                 // https://www.fourcc.org/mp4v/   => mpg-4
                 writer.open(outputVideoName, VideoWriter::fourcc('m', 'p', '4', 'v'), 30.0, frame.size());
-                std::cout<<"3";
+                // std::cout<<"3";
             }
             writer << frame; 
             auto finish = std::chrono::high_resolution_clock::now();

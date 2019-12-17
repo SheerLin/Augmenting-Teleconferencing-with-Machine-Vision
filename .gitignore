@@ -1,5 +1,9 @@
-.idea/*
-output/*
-__pycache__/*
+__pycache__
 *.pyc
+
+output/*
+*.log
+
+.idea
+.vscode
 .DS_Store
